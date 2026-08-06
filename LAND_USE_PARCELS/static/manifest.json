@@ -1,0 +1,15 @@
+{
+  "name": "Land Use Survey Application",
+  "short_name": "SurveyApp",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1b4332",
+  "theme_color": "#1b4332",
+  "icons": [
+    {
+      "src": "/static/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

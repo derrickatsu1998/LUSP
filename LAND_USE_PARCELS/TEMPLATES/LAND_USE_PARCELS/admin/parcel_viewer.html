@@ -1,0 +1,45 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Parcel Data Viewer{% endblock %}
+
+{% block content %}
+<h1>Parcel Data Viewer</h1>
+<div class="module">
+    <form method="get">
+        <input type="text" name="q" placeholder="Search parcels..." value="{{ request.GET.q|default:'' }}">
+        <button type="submit" class="button">Search</button>
+    </form>
+    <table style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr>
+                <th>Parcel ID</th>
+                <th>Name</th>
+                <th>Zone</th>
+                <th>Land Use</th>
+                <th>Status</th>
+                <th>Verified</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for parcel in parcels %}
+            <tr>
+                <td>{{ parcel.parcel_id }}</td>
+                <td>{{ parcel.parcel_name }}</td>
+                <td>{{ parcel.master_plan_zone }}</td>
+                <td>{{ parcel.field_land_use }}</td>
+                <td>{{ parcel.field_structure_status }}</td>
+                <td>{{ parcel.is_verified|yesno:"✅,❌" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No parcels found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- Export buttons (you can add links to the same export functions) -->
+    <div style="margin-top:20px;">
+        <a href="{% url 'admin:export_geojson' %}?ids={{ parcel_ids }}" class="button">Export GeoJSON</a>
+        ...
+    </div>
+</div>
+{% endblock %}
