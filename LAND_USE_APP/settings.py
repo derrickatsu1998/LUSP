@@ -3,6 +3,23 @@ import os
 from decouple import Csv, config
 import dj_database_url
 
+
+
+import os
+
+# --- Force GDAL and GEOS paths for production ---
+if os.name != 'nt':  # This means we are on a Linux system (like Render)
+    # These paths were found by the 'find' command in your Docker build
+    GDAL_LIBRARY_PATH = '/usr/lib/libgdal.so.30'
+    GEOS_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgeos_c.so.1'
+# --- End of force paths ---
+
+
+
+
+
+
+
 # ============================================================
 # BASE DIRECTORY
 # ============================================================
