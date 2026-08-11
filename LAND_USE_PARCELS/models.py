@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods
 
+# Import models from the same app - UNCOMMENTED
 from .models import OTPCode, Parcel, SavedParcelLayer, Structure
 
 # ============================================================
