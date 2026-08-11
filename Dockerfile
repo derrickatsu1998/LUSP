@@ -10,7 +10,13 @@ RUN apt-get update && apt-get install -y \
     && ln -s /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
-# Set GDAL/GEOS paths for Django
+# Find and verify the GDAL library
+RUN echo "=== Finding GDAL ===" && \
+    find /usr -name "libgdal.so*" 2>/dev/null && \
+    echo "=== Finding GEOS ===" && \
+    find /usr -name "libgeos*.so*" 2>/dev/null
+
+# Force the correct library path
 ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgdal.so
 ENV GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgeos_c.so
 
@@ -19,6 +25,10 @@ COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
+
+# Debug: Check if GDAL exists before collectstatic
+RUN ls -la /usr/lib/x86_64-linux-gnu/libgdal.so* || echo "GDAL not found in expected location"
+
 RUN python manage.py collectstatic --no-input
 
 EXPOSE 10000
