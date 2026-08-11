@@ -1,15 +1,16 @@
-FROM osgeo/gdal:ubuntu-small-3.6.3
+FROM ubuntu:22.04
 
-# Install Python and GEOS
+# Install Python, GDAL, and GEOS
 RUN apt-get update && apt-get install -y \
     python3.11 \
     python3-pip \
-    python3.11-venv \
+    gdal-bin \
+    libgdal-dev \
     libgeos-dev \
     && ln -s /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
-# Set GDAL/GEOS paths
+# Set environment variables
 ENV GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
 ENV GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
 
