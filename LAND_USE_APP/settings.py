@@ -1,18 +1,37 @@
+
+
 from pathlib import Path
 import os
 from decouple import Csv, config
 import dj_database_url
 
-
-
+# Force GDAL and GEOS paths for production
 import os
-
-# --- Force GDAL and GEOS paths for production ---
-if os.name != 'nt':  # This means we are on a Linux system (like Render)
-    # These paths were found by the 'find' command in your Docker build
+# Force GDAL and GEOS library paths
+if os.name != 'nt':
     GDAL_LIBRARY_PATH = '/usr/lib/libgdal.so.30'
     GEOS_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgeos_c.so.1'
-# --- End of force paths ---
+
+import sys
+
+if os.name != 'nt':  # Linux environment
+    try:
+        import ctypes
+        # Tell Django where to find GEOS
+        from django.contrib.gis.geos import GEOSGeometry
+        # Pre-load the library to ensure it's found
+        geos_path = '/usr/lib/x86_64-linux-gnu/libgeos_c.so.1'
+        ctypes.CDLL(geos_path)
+        print(f"Successfully loaded GEOS from: {geos_path}")
+    except Exception as e:
+        print(f"Error loading GEOS: {e}")
+        # Fallback to another possible location
+        try:
+            geos_path = '/usr/lib/libgeos_c.so.1'
+            ctypes.CDLL(geos_path)
+            print(f"Successfully loaded GEOS from: {geos_path}")
+        except Exception as e2:
+            print(f"Fallback also failed: {e2}")
 
 
 
