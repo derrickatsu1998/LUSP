@@ -13,18 +13,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # QGIS / GDAL / GEOS CONFIGURATION (only needed for local Windows)
 # ============================================================
 
-QGIS_BIN = r"C:\Program Files\QGIS 3.34.8\bin"
+import os
 
-if os.path.isdir(QGIS_BIN):
-    try:
-        os.add_dll_directory(QGIS_BIN)
-    except (AttributeError, FileNotFoundError):
-        pass
-    os.environ["PATH"] = QGIS_BIN + os.pathsep + os.environ.get("PATH", "")
-
-# Explicit GeoDjango library paths – use environment variables on Render
-GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH", os.path.join(QGIS_BIN, "gdal309.dll"))
-GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH", os.path.join(QGIS_BIN, "geos_c.dll"))
+# GDAL/GEOS configuration
+if os.name == 'nt':  # Windows (local)
+    QGIS_BIN = r"C:\Program Files\QGIS 3.34.8\bin"
+    if os.path.isdir(QGIS_BIN):
+        try:
+            os.add_dll_directory(QGIS_BIN)
+        except (AttributeError, FileNotFoundError):
+            pass
+        os.environ["PATH"] = QGIS_BIN + os.pathsep + os.environ.get("PATH", "")
+    GDAL_LIBRARY_PATH = os.path.join(QGIS_BIN, "gdal309.dll")
+    GEOS_LIBRARY_PATH = os.path.join(QGIS_BIN, "geos_c.dll")
+else:  # Linux (Render)
+    GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH", "/usr/lib/libgdal.so")
+    GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH", "/usr/lib/libgeos_c.so")
 
 # ============================================================
 # SECURITY
