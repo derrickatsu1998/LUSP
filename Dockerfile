@@ -1,22 +1,21 @@
-FROM python:3.11-slim-bullseye
+FROM osgeo/gdal:3.9.0
 
-# Install GDAL and GEOS
+# Add Python on top of the GDAL image
 RUN apt-get update && apt-get install -y \
-    gdal-bin \
-    libgdal-dev \
+    python3.11 \
+    python3-pip \
+    python3.11-venv \
     libgeos-dev \
-    libgeos-c1v5 \
+    && ln -s /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
-# Find where GEOS is installed
-RUN echo "=== Finding GEOS ===" && find /usr -name "libgeos*.so*" 2>/dev/null || echo "GEOS not found"
-
-# Find where GDAL is installed
-RUN echo "=== Finding GDAL ===" && find /usr -name "libgdal*.so*" 2>/dev/null || echo "GDAL not found"
+# Set GDAL environment variables for Django
+ENV GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
+ENV GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
 RUN python manage.py collectstatic --no-input
