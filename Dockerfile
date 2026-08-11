@@ -5,15 +5,14 @@ RUN apt-get update && apt-get install -y \
     gdal-bin \
     libgdal-dev \
     libgeos-dev \
+    libgeos-c1v5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Find and set the correct library paths
-RUN echo "Finding GDAL..." && find /usr -name "libgdal.so*" 2>/dev/null
-RUN echo "Finding GEOS..." && find /usr -name "libgeos_c.so*" 2>/dev/null
+# Find where GEOS is installed
+RUN echo "=== Finding GEOS ===" && find /usr -name "libgeos*.so*" 2>/dev/null || echo "GEOS not found"
 
-# Set environment variables with the actual paths
-ENV GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
-ENV GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
+# Find where GDAL is installed
+RUN echo "=== Finding GDAL ===" && find /usr -name "libgdal*.so*" 2>/dev/null || echo "GDAL not found"
 
 WORKDIR /app
 COPY requirements.txt .
