@@ -5,7 +5,12 @@ RUN apt-get update && apt-get install -y \
     gdal-bin \
     libgdal-dev \
     libgeos-dev \
+    libgeos-c1v5 \
     && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables for GDAL and GEOS
+ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgdal.so
+ENV GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgeos_c.so
 
 WORKDIR /app
 COPY requirements.txt .
