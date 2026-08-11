@@ -1,6 +1,6 @@
-FROM osgeo/gdal:3.9.0
+FROM osgeo/gdal:ubuntu-small-3.6.3
 
-# Add Python on top of the GDAL image
+# Install Python and GEOS
 RUN apt-get update && apt-get install -y \
     python3.11 \
     python3-pip \
@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     && ln -s /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
-# Set GDAL environment variables for Django
+# Set GDAL/GEOS paths
 ENV GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
 ENV GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
 
