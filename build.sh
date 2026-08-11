@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -o errexit
 
-# Install GDAL system libraries
+# Add GDAL repository for newer version
+apt-get update
+apt-get install -y software-properties-common
+add-apt-repository ppa:ubuntugis/ubuntugis-unstable
 apt-get update
 apt-get install -y gdal-bin libgdal-dev
 
-# Set GDAL_CONFIG for pip to find GDAL
 export GDAL_CONFIG=/usr/bin/gdal-config
 
 pip install --upgrade pip
