@@ -3,154 +3,629 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La-Dadekotopon Survey – Login</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <title>Sign In - Land Use App</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #1a1a2e;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Background with land use pattern overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            background: 
+                /* Parcel pattern - grid with varying opacity */
+                linear-gradient(rgba(102, 126, 234, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(102, 126, 234, 0.1) 1px, transparent 1px),
+                /* Land use color blocks */
+                repeating-linear-gradient(45deg,
+                    rgba(76, 175, 80, 0.15) 0px,
+                    rgba(76, 175, 80, 0.15) 20px,
+                    rgba(255, 193, 7, 0.15) 20px,
+                    rgba(255, 193, 7, 0.15) 40px,
+                    rgba(33, 150, 243, 0.15) 40px,
+                    rgba(33, 150, 243, 0.15) 60px,
+                    rgba(156, 39, 176, 0.15) 60px,
+                    rgba(156, 39, 176, 0.15) 80px
+                ),
+                /* Gradient overlay for readability */
+                radial-gradient(ellipse at center, 
+                    rgba(26, 26, 46, 0.7) 0%, 
+                    rgba(26, 26, 46, 0.9) 100%
+                );
+            background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%;
+            background-blend-mode: overlay;
+        }
+
+        /* Floating land use icons */
+        .floating-icons {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .floating-icons i {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.15;
+            color: white;
+            animation: float 15s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 48px 40px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-icon {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .logo h1 {
+            font-size: 30px;
+            color: #2d3748;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .logo h1 span {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo p {
+            color: #718096;
+            font-size: 15px;
+            margin-top: 6px;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 16px;
+            transition: all 0.3s;
+            outline: none;
+            background: #f7fafc;
+        }
+
+        .form-group input:focus {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+        }
+
+        .form-group input:focus + .input-icon {
+            color: #667eea;
+        }
+
+        .form-group input::placeholder {
+            color: #a0aec0;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .form-options label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #4a5568;
+            cursor: pointer;
+        }
+
+        .form-options label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+
+        .form-options a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .form-options a:hover {
+            color: #764ba2;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.success {
+            display: block;
+            background: #f0fff4;
+            color: #38a169;
+            border: 1px solid #c6f6d5;
+        }
+
+        .message.error {
+            display: block;
+            background: #fff5f5;
+            color: #e53e3e;
+            border: 1px solid #fed7d7;
+        }
+
+        .message.info {
+            display: block;
+            background: #ebf8ff;
+            color: #3182ce;
+            border: 1px solid #bee3f8;
+        }
+
+        .otp-timer {
+            text-align: center;
+            margin-top: 16px;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #4a5568;
+            display: none;
+        }
+
+        .otp-timer .timer-number {
+            font-weight: 700;
+            font-size: 18px;
+            color: #667eea;
+        }
+
+        .resend-btn {
+            background: none;
+            border: none;
+            color: #667eea;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .resend-btn:hover:not(:disabled) {
+            background: #ebf8ff;
+        }
+
+        .resend-btn:disabled {
+            color: #a0aec0;
+            cursor: not-allowed;
+            text-decoration: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 13px;
+            color: #718096;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: #764ba2;
+        }
+
+        .footer .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .footer .social-links a {
+            font-size: 20px;
+            color: #a0aec0;
+            transition: color 0.3s;
+        }
+
+        .footer .social-links a:hover {
+            color: #667eea;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #ebf8ff;
+            color: #3182ce;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+        }
+
+        .secure-badge {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            gap: 8px;
+            margin-top: 16px;
+            font-size: 13px;
+            color: #718096;
         }
-        .login-card {
-            background: #fff;
-            border-radius: 20px;
-            padding: 40px 35px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-            max-width: 420px;
-            width: 100%;
-            transition: transform 0.3s ease;
+
+        .secure-badge .lock {
+            font-size: 16px;
         }
-        .login-card:hover {
-            transform: translateY(-5px);
-        }
-        .login-card .logo {
-            font-size: 3.5rem;
-            color: #2d6a4f;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        .login-card h4 {
-            font-weight: 700;
-            color: #1e293b;
-            text-align: center;
-        }
-        .login-card p {
-            color: #64748b;
-            text-align: center;
-            font-size: 0.95rem;
-        }
-        .form-control {
-            border-radius: 12px;
-            padding: 12px 16px;
-            border: 1px solid #e2e8f0;
-            transition: 0.3s;
-        }
-        .form-control:focus {
-            border-color: #2d6a4f;
-            box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.2);
-        }
-        .btn-primary {
-            background: #2d6a4f;
-            border: none;
-            border-radius: 12px;
-            padding: 12px;
-            font-weight: 600;
-            transition: 0.3s;
-            width: 100%;
-        }
-        .btn-primary:hover {
-            background: #1b4332;
-            transform: scale(1.02);
-        }
-        .btn-primary:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-        .spinner-border-sm {
-            width: 1.2rem;
-            height: 1.2rem;
-        }
-        .alert {
-            border-radius: 12px;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 0.8rem;
-            color: #94a3b8;
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 32px 24px;
+                margin: 16px;
+            }
+            .logo h1 {
+                font-size: 24px;
+            }
+            .form-options {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
-<div class="login-card">
-    <div class="logo">
-        <i class="bi bi-map-fill"></i>
+    <!-- Background floating icons -->
+    <div class="floating-icons">
+        <i style="top: 10%; left: 5%; animation-delay: 0s;">🏗️</i>
+        <i style="top: 20%; right: 8%; animation-delay: 2s;">🌳</i>
+        <i style="bottom: 30%; left: 8%; animation-delay: 4s;">🏭</i>
+        <i style="bottom: 15%; right: 5%; animation-delay: 1s;">🌾</i>
+        <i style="top: 60%; left: 3%; animation-delay: 3s;">🏘️</i>
+        <i style="top: 40%; right: 3%; animation-delay: 5s;">🌿</i>
+        <i style="bottom: 5%; left: 50%; animation-delay: 2.5s;">🚜</i>
+        <i style="top: 5%; left: 50%; animation-delay: 4.5s;">📊</i>
     </div>
-    <h4>Group_10_LUSP_Data_Form</h4>
-    <p>Enter your registered email to receive a one‑time passcode.</p>
 
-    <form id="otpRequestForm">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label for="emailInput" class="form-label">Email address</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
-                <input type="email" name="email" id="emailInput" class="form-control" placeholder="your@email.com" required>
-            </div>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-icon">🌍</div>
+            <h1>Land<span>Use</span></h1>
+            <p>Smart Land Management & Planning</p>
+            <span class="badge">🔐 Secure Access</span>
         </div>
-        <button type="submit" id="submitBtn" class="btn btn-primary">
-            <span id="btnText">Send OTP</span>
-            <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-        </button>
-        <div id="messageContainer" class="mt-3"></div>
-    </form>
-    <div class="footer">
-        <i class="bi bi-shield-lock-fill"></i> Secure &bull; Powered by BetaCode Software Solutions and Consultancy
+
+        <form id="otpForm" method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="email">📧 Email Address</label>
+                <div class="input-wrapper">
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="you@example.com" 
+                        required
+                        autofocus
+                    >
+                </div>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                🔑 Send One-Time Password
+            </button>
+
+            <div id="message" class="message"></div>
+
+            <div id="otpTimer" class="otp-timer">
+                <span>⏱️ Resend available in </span>
+                <span class="timer-number" id="timerCountdown">60</span>
+                <span> seconds</span>
+                <br>
+                <button type="button" class="resend-btn" id="resendBtn" disabled>⟳ Resend OTP</button>
+            </div>
+
+            <div class="secure-badge">
+                <span class="lock">🔒</span>
+                <span>Your data is encrypted and secure</span>
+            </div>
+        </form>
+
+        <div class="footer">
+            <div class="social-links">
+                <a href="#" title="Twitter">🐦</a>
+                <a href="#" title="GitHub">🐙</a>
+                <a href="#" title="LinkedIn">💼</a>
+            </div>
+            Need help? <a href="mailto:support@landuse.com">Contact Support</a>
+            <br>
+            <span style="font-size: 12px; color: #a0aec0;">&copy; 2026 LandUse App. All rights reserved.</span>
+        </div>
     </div>
-</div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script>
-$(document).ready(function() {
-    $('#otpRequestForm').on('submit', function(e) {
-        e.preventDefault();
-        const $btn = $('#submitBtn');
-        const $text = $('#btnText');
-        const $spinner = $('#btnSpinner');
-        const $msg = $('#messageContainer');
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('otpForm');
+    const emailInput = document.getElementById('email');
+    const submitBtn = document.getElementById('submitBtn');
+    const messageDiv = document.getElementById('message');
+    const otpTimerDiv = document.getElementById('otpTimer');
+    const timerCountdown = document.getElementById('timerCountdown');
+    const resendBtn = document.getElementById('resendBtn');
 
-        // Disable button and show spinner
-        $btn.prop('disabled', true);
-        $text.text('Sending...');
-        $spinner.removeClass('d-none');
+    let countdownInterval = null;
+    let isSubmitting = false;
 
-        $.ajax({
-            url: '/request-otp/',
-            type: 'POST',
-            data: $(this).serialize(),
-            success: function(res) {
-                $msg.html('<div class="alert alert-success">✅ ' + res.message + ' Check your terminal for the OTP.</div>');
-                setTimeout(function() {
-                    window.location.href = '/verify-otp/';
-                }, 2000);
-            },
-            error: function(xhr) {
-                let errorMsg = '❌ Failed to send OTP.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMsg = xhr.responseJSON.message;
-                }
-                $msg.html('<div class="alert alert-danger">' + errorMsg + '</div>');
-                // Re-enable button
-                $btn.prop('disabled', false);
-                $text.text('Send OTP');
-                $spinner.addClass('d-none');
+    const urlParams = new URLSearchParams(window.location.search);
+    const nextUrl = urlParams.get('next');
+
+    // Get CSRF token from cookie
+    function getCSRFToken() {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'csrftoken') {
+                return value;
             }
+        }
+        return null;
+    }
+
+    if (emailInput) {
+        emailInput.focus();
+    }
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (isSubmitting) return;
+
+        const email = emailInput.value.trim();
+
+        if (!email) {
+            showMessage('Please enter your email address.', 'error');
+            return;
+        }
+
+        if (!isValidEmail(email)) {
+            showMessage('Please enter a valid email address.', 'error');
+            return;
+        }
+
+        isSubmitting = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Sending...';
+        hideMessage();
+
+        const formData = new FormData(form);
+        const csrfToken = getCSRFToken();
+        
+        fetch('/request-otp/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken || ''
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            isSubmitting = false;
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🔑 Send One-Time Password';
+
+            if (data.success) {
+                showMessage('✅ OTP sent successfully! Check your email.', 'success');
+                startCountdown(60);
+                if (data.redirect_url) {
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 2000);
+                }
+            } else {
+                showMessage('❌ ' + (data.error || 'Failed to send OTP. Please try again.'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            isSubmitting = false;
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🔑 Send One-Time Password';
+            showMessage('❌ Network error. Please check your connection.', 'error');
         });
     });
+
+    resendBtn.addEventListener('click', function() {
+        if (!resendBtn.disabled) {
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    function showMessage(text, type = 'info') {
+        messageDiv.textContent = text;
+        messageDiv.className = 'message ' + type;
+        messageDiv.style.display = 'block';
+    }
+
+    function hideMessage() {
+        messageDiv.style.display = 'none';
+    }
+
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function startCountdown(seconds) {
+        let remaining = seconds;
+        otpTimerDiv.style.display = 'block';
+        timerCountdown.textContent = remaining;
+        resendBtn.disabled = true;
+
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+        }
+
+        countdownInterval = setInterval(() => {
+            remaining--;
+            timerCountdown.textContent = remaining;
+
+            if (remaining <= 0) {
+                clearInterval(countdownInterval);
+                resendBtn.disabled = false;
+                timerCountdown.textContent = '0';
+            }
+        }, 1000);
+    }
+
+    if (nextUrl) {
+        showMessage('Please sign in to continue.', 'info');
+    }
 });
 </script>
 </body>
