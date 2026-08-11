@@ -1,9 +1,10 @@
 FROM python:3.11-slim-bullseye
 
-# Install GDAL 3.2.2 system libraries
+# Install GDAL and GEOS system libraries
 RUN apt-get update && apt-get install -y \
     gdal-bin \
     libgdal-dev \
+    libgeos-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
