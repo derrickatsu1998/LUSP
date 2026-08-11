@@ -155,13 +155,28 @@ default_db = {
     "PORT": "5432",
 }
 
+import os
+import dj_database_url
+
 DATABASES = {
-    "default": dj_database_url.config(
-        default=f"postgis://{default_db['USER']}:{default_db['PASSWORD']}@{default_db['HOST']}:{default_db['PORT']}/{default_db['NAME']}",
-        conn_max_age=600,
-        engine="django.contrib.gis.db.backends.postgis",
-    )
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': os.environ.get('DB_NAME', 'landuse'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+    }
 }
+
+# Or use DATABASE_URL (recommended)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES['default'] = dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,
+        ssl_require=True
+    )
 
 # ============================================================
 # PASSWORD VALIDATION
