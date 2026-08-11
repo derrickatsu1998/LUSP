@@ -1,7 +1,10 @@
 FROM python:3.11-slim-bullseye
 
-# Install GDAL system libraries
+# Add GDAL repository for newer version
 RUN apt-get update && apt-get install -y \
+    gnupg \
+    && echo "deb http://deb.debian.org/debian bullseye-backports main" >> /etc/apt/sources.list \
+    && apt-get update && apt-get install -y \
     gdal-bin \
     libgdal-dev \
     && rm -rf /var/lib/apt/lists/*
