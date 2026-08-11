@@ -1,632 +1,366 @@
 import json
+import os
+import uuid
 
 from django.conf import settings
-from django.contrib.auth import get_user_model, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
+from django.contrib.gis.db import models as gis_models
+from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
-from django.core.validators import validate_email
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.http import require_GET, require_http_methods
-
-# Import models from the same app - UNCOMMENTED
-from .models import OTPCode, Parcel, SavedParcelLayer, Structure
-
-# ============================================================
-# USER MODEL
-# ============================================================
+from django.core.validators import MinValueValidator
+from django.db import models
+from django.utils import timezone
 
 User = get_user_model()
 
-# ============================================================
-# GEOJSON HELPERS
-# ============================================================
-
-def parcel_feature(parcel):
-    """Return a parcel as a WGS84 GeoJSON Feature."""
-    return {
-        "type": "Feature",
-        "geometry": {
-            "type": "Point",
-            "coordinates": [
-                float(parcel.longitude),
-                float(parcel.latitude),
-            ],
-        }
-        if (
-            parcel.longitude is not None
-            and parcel.latitude is not None
-        )
-        else None,
-        "properties": {
-            "parcel_id": parcel.parcel_id,
-            "parcel_name": parcel.parcel_name,
-            "section": parcel.section,
-            "section_number": parcel.section_number,
-            "street": parcel.street,
-            "master_zone": parcel.master_plan_zone,
-            "field_land_use": parcel.field_land_use,
-            "field_land_use_display": (
-                parcel.get_field_land_use_display()
-                if parcel.field_land_use
-                else "Not Verified"
-            ),
-            "field_structure_status": parcel.field_structure_status,
-            "field_structure_status_display": (
-                parcel.get_field_structure_status_display()
-                if parcel.field_structure_status
-                else "Not Recorded"
-            ),
-            "field_notes": parcel.field_notes,
-            "photo_url": (
-                parcel.field_photo.url
-                if parcel.field_photo
-                else None
-            ),
-            "verified": parcel.is_verified,
-            "date_visited": (
-                parcel.date_visited.isoformat()
-                if parcel.date_visited
-                else None
-            ),
-        },
-    }
-
-def structure_payload(structure):
-    return {
-        "id": structure.pk,
-        "sequence": structure.sequence,
-        "structure_type": structure.structure_type,
-        "storeys": structure.storeys,
-        "condition": structure.condition,
-        "notes": structure.notes,
-        "photo_url": structure.photo.url if structure.photo else None,
-    }
 
 # ============================================================
-# AUTHENTICATION / REQUEST OTP
+# OTP CODE
 # ============================================================
 
-@ensure_csrf_cookie
-@require_http_methods(["GET", "POST"])
-def request_otp_view(request):
-    """
-    Request a six-digit OTP using an email address.
-    Supports both regular form submission and AJAX requests.
-    """
-    
-    # GET - Return the HTML page
-    if request.method == "GET":
-        return render(
-            request,
-            "LAND_USE_PARCELS/request_otp.html",
-        )
+class OTPCode(models.Model):
+    """Six-digit one-time password for email authentication."""
 
-    # POST - Handle AJAX or regular form submission
-    email = request.POST.get("email", "").strip().lower()
-    
-    # Check if this is an AJAX request
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    
-    # Validate email
-    if not email:
-        if is_ajax:
-            return JsonResponse({'success': False, 'error': 'Please enter your email address.'})
-        return render(request, "LAND_USE_PARCELS/request_otp.html", {"error": "Please enter your email address."})
-
-    try:
-        validate_email(email)
-    except ValidationError:
-        if is_ajax:
-            return JsonResponse({'success': False, 'error': 'Please enter a valid email address.'})
-        return render(request, "LAND_USE_PARCELS/request_otp.html", {"error": "Please enter a valid email address."})
-
-    # Find or create user
-    user = User.objects.filter(email__iexact=email).first()
-    if user is None:
-        user = User.objects.create_user(username=email, email=email)
-
-    if hasattr(user, "is_active") and not user.is_active:
-        user.is_active = True
-        user.save(update_fields=["is_active"])
-
-    # Invalidate old OTPs
-    OTPCode.objects.filter(user=user, is_used=False).update(is_used=True)
-
-    # Generate new OTP
-    code = OTPCode.generate_otp()
-    otp = OTPCode.objects.create(user=user, code=code)
-
-    # Send email
-    try:
-        send_mail(
-            subject="Land Use Survey System - Verification Code",
-            message=f"Dear User,\n\nYour Land Use Survey System verification code is:\n\n{code}\n\nThis code expires in 5 minutes.\n\nIf you did not request this code, you can safely ignore this email.\n\nLand Use Survey System",
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            recipient_list=[email],
-            fail_silently=False,
-        )
-    except Exception as exc:
-        otp.delete()
-        error_msg = f"The verification email could not be sent. Email error: {exc}"
-        if is_ajax:
-            return JsonResponse({'success': False, 'error': error_msg})
-        return render(request, "LAND_USE_PARCELS/request_otp.html", {"error": error_msg})
-
-    # Store email in session
-    request.session["otp_email"] = email
-    request.session.modified = True
-
-    # Return response
-    if is_ajax:
-        return JsonResponse({
-            'success': True,
-            'message': 'OTP sent successfully!',
-            'redirect_url': request.build_absolute_uri('/verify-otp/')
-        })
-    
-    # Regular form submission – redirect to verify page
-    return redirect("verify_otp")
-
-# ============================================================
-# VERIFY OTP
-# ============================================================
-
-@ensure_csrf_cookie
-@require_http_methods(["GET", "POST"])
-def verify_otp_view(request):
-    """
-    Verify the latest unused six-digit OTP and log the user into Django.
-    """
-    
-    # Get email from session
-    email = request.session.get("otp_email")
-
-    # GET request
-    if request.method == "GET":
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-            },
-        )
-
-    # POST requires session email
-    if not email:
-        return redirect("request_otp")
-
-    # Get submitted OTP
-    code = request.POST.get("code", "").strip()
-    
-    # Keep only numeric characters
-    code = "".join(char for char in code if char.isdigit())
-
-    # OTP must contain exactly six digits
-    if len(code) != 6:
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-                "error": "Please enter the complete 6-digit verification code.",
-            },
-        )
-
-    # Find user
-    user = User.objects.filter(email__iexact=email).first()
-    if user is None:
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-                "error": "User account could not be found. Please request a new verification code.",
-            },
-        )
-
-    # Find latest unused OTP
-    otp = (
-        OTPCode.objects
-        .filter(user=user, is_used=False)
-        .order_by("-created_at")
-        .first()
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="otp_codes",
     )
-    if otp is None:
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-                "error": "No active verification code was found. Please request a new code.",
-            },
-        )
 
-    # Check OTP code
-    if str(otp.code).strip() != code:
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-                "error": "Invalid verification code. Please enter the latest code sent to your email.",
-            },
-        )
-
-    # Check OTP expiration
-    if not otp.is_valid():
-        otp.is_used = True
-        otp.save(update_fields=["is_used"])
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-                "error": "This verification code has expired. Please request a new code.",
-            },
-        )
-
-    # OTP is valid - mark as used
-    otp.is_used = True
-    otp.save(update_fields=["is_used"])
-
-    # Activate user
-    if hasattr(user, "is_active") and not user.is_active:
-        user.is_active = True
-        user.save(update_fields=["is_active"])
-
-    # Log user in
-    login(request, user)
-
-    # Remove temporary OTP session data
-    request.session.pop("otp_email", None)
-    request.session.modified = True
-
-    # Redirect to map
-    return redirect("map_view")
-
-# ============================================================
-# LOGOUT
-# ============================================================
-
-def logout_view(request):
-    """Log the current user out and return to OTP login."""
-    logout(request)
-    return redirect("request_otp")
-
-# ============================================================
-# MAP
-# ============================================================
-
-@login_required(login_url="request_otp")
-def map_view(request):
-    """Main LUSP map page."""
-    return render(request, "LAND_USE_PARCELS/map.html")
-
-# ============================================================
-# PARCEL GEOJSON API
-# ============================================================
-
-@login_required(login_url="request_otp")
-@require_GET
-def get_parcel_data(request):
-    """Return all parcels with valid coordinates as a GeoJSON FeatureCollection."""
-    parcels = Parcel.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
-    features = [parcel_feature(parcel) for parcel in parcels]
-    return JsonResponse({"type": "FeatureCollection", "features": features})
-
-# ============================================================
-# PARCEL SURVEY
-# ============================================================
-
-@login_required(login_url="request_otp")
-@require_http_methods(["GET", "POST"])
-def parcel_survey(request, parcel_id):
-    """Read or save field survey information for a parcel."""
-    
-    if request.method == "GET":
-        try:
-            parcel = Parcel.objects.get(parcel_id=parcel_id)
-        except Parcel.DoesNotExist:
-            return JsonResponse({"parcel_id": parcel_id, "exists": False})
-
-        return JsonResponse({
-            "parcel_id": parcel.parcel_id,
-            "exists": True,
-            "parcel_name": parcel.parcel_name,
-            "section": parcel.section,
-            "section_number": parcel.section_number,
-            "street": parcel.street,
-            "master_plan_zone": parcel.master_plan_zone,
-            "field_land_use": parcel.field_land_use,
-            "field_land_use_display": (
-                parcel.get_field_land_use_display()
-                if parcel.field_land_use
-                else "Not Verified"
-            ),
-            "field_structure_status": parcel.field_structure_status,
-            "field_structure_status_display": (
-                parcel.get_field_structure_status_display()
-                if parcel.field_structure_status
-                else "Not Recorded"
-            ),
-            "field_notes": parcel.field_notes,
-            "field_photo_url": parcel.field_photo.url if parcel.field_photo else None,
-            "is_verified": parcel.is_verified,
-        })
-
-    # POST
-    parcel, created = Parcel.objects.get_or_create(parcel_id=parcel_id)
-    error = save_survey_fields(
-        parcel=parcel,
-        data=request.POST,
-        files=request.FILES,
-        user=request.user,
-        photo_field="field_photo",
+    code = models.CharField(
+        max_length=6,
+        help_text="Six-digit numeric code",
     )
-    if error:
-        return JsonResponse({"ok": False, "error": error}, status=400)
 
-    return JsonResponse({
-        "ok": True,
-        "message": f"Parcel {parcel_id} saved successfully.",
-        "created": created,
-        "parcel": parcel_feature(parcel),
-    })
-
-# ============================================================
-# SAVE SURVEY FIELDS
-# ============================================================
-
-def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
-    """Validate and save field survey information. Returns None on success, error string on failure."""
-    
-    allowed_land_uses = {value for value, _ in Parcel.LAND_USE_CHOICES}
-    allowed_statuses = {value for value, _ in Parcel.STATUS_CHOICES}
-
-    # Basic text fields
-    for field in ("parcel_name", "street", "section", "section_number", "field_notes"):
-        if field in data:
-            value = data.get(field, "").strip()
-            setattr(parcel, field, value)
-
-    # Coordinates
-    for field in ("latitude", "longitude"):
-        if field in data:
-            value = data.get(field, "").strip()
-            if not value:
-                setattr(parcel, field, None)
-                continue
-            try:
-                setattr(parcel, field, float(value))
-            except (TypeError, ValueError):
-                return f"Invalid {field} value."
-
-    # Land use
-    if "field_land_use" in data:
-        value = data.get("field_land_use", "").strip()
-        if value and value not in allowed_land_uses:
-            return "Invalid land-use value."
-        parcel.field_land_use = value
-
-    # Structure status
-    if "field_structure_status" in data:
-        value = data.get("field_structure_status", "").strip()
-        if value and value not in allowed_statuses:
-            return "Invalid structure-status value."
-        parcel.field_structure_status = value
-
-    # Photo
-    if files.get(photo_field):
-        parcel.field_photo = files[photo_field]
-
-    # Verification
-    parcel.is_verified = True
-    parcel.last_edited_by = user
-    parcel.save()
-    return None
-
-# ============================================================
-# BACKWARDS-COMPATIBLE UPDATE API
-# ============================================================
-
-@login_required(login_url="request_otp")
-@require_http_methods(["POST"])
-def update_parcel(request):
-    """Backwards-compatible endpoint for the older mobile form."""
-    
-    parcel_id = request.POST.get("parcel_id", "").strip()
-    if not parcel_id:
-        return JsonResponse({"success": False, "message": "parcel_id is required."}, status=400)
-
-    parcel = get_object_or_404(Parcel, parcel_id=parcel_id)
-    data = {
-        "field_land_use": request.POST.get("land_use", ""),
-        "field_structure_status": request.POST.get("status", ""),
-        "field_notes": request.POST.get("notes", ""),
-    }
-
-    error = save_survey_fields(
-        parcel=parcel,
-        data=data,
-        files=request.FILES,
-        user=request.user,
-        photo_field="photo",
+    created_at = models.DateTimeField(
+        default=timezone.now,
     )
-    if error:
-        return JsonResponse({"success": False, "message": error}, status=400)
 
-    return JsonResponse({
-        "success": True,
-        "message": f"Parcel {parcel_id} updated!",
-        "parcel": parcel_feature(parcel),
-    })
-
-# ============================================================
-# ZONES GEOJSON
-# ============================================================
-
-@login_required(login_url="request_otp")
-@require_GET
-def get_zones_geojson(request):
-    """Return master-plan zones as GeoJSON."""
-    parcels = Parcel.objects.exclude(master_plan_zone="").exclude(latitude__isnull=True).exclude(longitude__isnull=True)
-    features = []
-    for parcel in parcels:
-        feature = parcel_feature(parcel)
-        feature["properties"] = {"zone": parcel.master_plan_zone, "parcel_id": parcel.parcel_id}
-        features.append(feature)
-    return JsonResponse({"type": "FeatureCollection", "features": features})
-
-# ============================================================
-# VERIFIED GEOJSON EXPORT
-# ============================================================
-
-@login_required(login_url="request_otp")
-@require_GET
-def export_verified_geojson(request):
-    """Export verified parcels as a GeoJSON FeatureCollection."""
-    parcels = Parcel.objects.filter(is_verified=True).exclude(latitude__isnull=True).exclude(longitude__isnull=True)
-    geojson = {"type": "FeatureCollection", "features": [parcel_feature(parcel) for parcel in parcels]}
-    response = HttpResponse(
-        json.dumps(geojson, indent=2, ensure_ascii=False),
-        content_type="application/geo+json",
+    is_used = models.BooleanField(
+        default=False,
+        help_text="Whether this code has been used",
     )
-    response["Content-Disposition"] = 'attachment; filename="verified_parcels.geojson"'
-    return response
+
+    class Meta:
+        verbose_name = "OTP Code"
+        verbose_name_plural = "OTP Codes"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"OTP for {self.user.email} - {self.code}"
+
+    @classmethod
+    def generate_otp(cls):
+        """Generate a random 6-digit OTP."""
+        import random
+        return f"{random.randint(100000, 999999)}"
+
+    def is_valid(self):
+        """Check if OTP is still valid (not expired and not used)."""
+        if self.is_used:
+            return False
+        # Expires after 5 minutes
+        expiry_time = self.created_at + timezone.timedelta(minutes=5)
+        return timezone.now() <= expiry_time
+
 
 # ============================================================
-# CONFORMANCE CHECK
+# PARCEL
 # ============================================================
 
-@login_required(login_url="request_otp")
-@require_GET
-def conformance_check(request, parcel_id):
-    """Return available parcel information for a conformance check."""
-    parcel = get_object_or_404(Parcel, parcel_id=parcel_id)
-    return JsonResponse({
-        "parcel_id": parcel.parcel_id,
-        "master_plan_zone": parcel.master_plan_zone,
-        "field_land_use": parcel.field_land_use,
-        "field_land_use_display": (
-            parcel.get_field_land_use_display() if parcel.field_land_use else None
-        ),
-        "field_structure_status": parcel.field_structure_status,
-        "verified": parcel.is_verified,
-        "conformance": "NOT_DETERMINED",
-        "message": "A formal conformance result cannot be determined because the current database model does not contain planning-rule or permitted-use definitions.",
-    })
+class Parcel(models.Model):
+    """Land parcel with field survey data."""
+
+    # Land use choices
+    LAND_USE_CHOICES = [
+        ("AGRICULTURE", "Agriculture"),
+        ("COMMERCIAL", "Commercial"),
+        ("INDUSTRIAL", "Industrial"),
+        ("RESIDENTIAL", "Residential"),
+        ("INSTITUTIONAL", "Institutional"),
+        ("RECREATIONAL", "Recreational"),
+        ("TRANSPORTATION", "Transportation"),
+        ("UTILITY", "Utility"),
+        ("VACANT", "Vacant"),
+        ("OTHER", "Other"),
+    ]
+
+    # Structure status choices
+    STATUS_CHOICES = [
+        ("EXCELLENT", "Excellent"),
+        ("GOOD", "Good"),
+        ("FAIR", "Fair"),
+        ("POOR", "Poor"),
+        ("DILAPIDATED", "Dilapidated"),
+        ("UNDER_CONSTRUCTION", "Under Construction"),
+        ("VACANT", "Vacant"),
+        ("DEMOLISHED", "Demolished"),
+        ("NOT_APPLICABLE", "Not Applicable"),
+    ]
+
+    # Core fields
+    parcel_id = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique parcel identifier",
+    )
+
+    parcel_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Parcel name or description",
+    )
+
+    # Location fields
+    latitude = models.DecimalField(
+        max_digits=11,
+        decimal_places=8,
+        null=True,
+        blank=True,
+        help_text="Latitude in decimal degrees",
+    )
+
+    longitude = models.DecimalField(
+        max_digits=11,
+        decimal_places=8,
+        null=True,
+        blank=True,
+        help_text="Longitude in decimal degrees",
+    )
+
+    location = gis_models.PointField(
+        srid=4326,
+        null=True,
+        blank=True,
+        help_text="PostGIS point geometry",
+    )
+
+    # Address fields
+    section = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Section or neighborhood",
+    )
+
+    section_number = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Section number",
+    )
+
+    street = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Street address",
+    )
+
+    # Planning fields
+    master_plan_zone = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Master plan zone designation",
+    )
+
+    # Field survey fields
+    field_land_use = models.CharField(
+        max_length=50,
+        choices=LAND_USE_CHOICES,
+        blank=True,
+        help_text="Current land use observed in the field",
+    )
+
+    field_structure_status = models.CharField(
+        max_length=50,
+        choices=STATUS_CHOICES,
+        blank=True,
+        help_text="Current structure status observed in the field",
+    )
+
+    field_notes = models.TextField(
+        blank=True,
+        help_text="Additional field observation notes",
+    )
+
+    field_photo = models.ImageField(
+        upload_to="parcel_photos/",
+        null=True,
+        blank=True,
+        help_text="Field photo of the parcel",
+    )
+
+    # Verification fields
+    is_verified = models.BooleanField(
+        default=False,
+        help_text="Whether this parcel has been field-verified",
+    )
+
+    date_visited = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date of field visit",
+    )
+
+    last_edited_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="edited_parcels",
+        help_text="User who last edited this parcel",
+    )
+
+    # Timestamps
+    created_at = models.DateTimeField(
+        default=timezone.now,
+        help_text="When this parcel record was created",
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        help_text="When this parcel record was last updated",
+    )
+
+    class Meta:
+        verbose_name = "Parcel"
+        verbose_name_plural = "Parcels"
+        ordering = ["parcel_id"]
+
+    def __str__(self):
+        return f"{self.parcel_id} - {self.parcel_name or 'Unnamed'}"
+
+    def save(self, *args, **kwargs):
+        """Save the parcel and update the PostGIS location field."""
+        if self.latitude is not None and self.longitude is not None:
+            self.location = Point(
+                float(self.longitude),
+                float(self.latitude),
+                srid=4326,
+            )
+        else:
+            self.location = None
+        super().save(*args, **kwargs)
+
+    @property
+    def is_verified_display(self):
+        """Return a human-readable verification status."""
+        return "Verified" if self.is_verified else "Not Verified"
+
 
 # ============================================================
-# SAVE STRUCTURES
+# SAVED PARCEL LAYER
 # ============================================================
 
-def save_structures(parcel, data, files):
-    """Create, update and remove the structures submitted by the mobile form."""
-    raw_value = data.get("structures_json", "[]")
-    try:
-        structures_data = json.loads(raw_value)
-    except (TypeError, json.JSONDecodeError):
-        return "The structure list is invalid."
+class SavedParcelLayer(models.Model):
+    """User-saved GeoJSON layers."""
 
-    if not isinstance(structures_data, list) or len(structures_data) > 50:
-        return "Enter between 0 and 50 structures."
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="saved_layers",
+    )
 
-    allowed_types = {value for value, _ in Structure.TYPE_CHOICES}
-    allowed_conditions = {value for value, _ in Parcel.STATUS_CHOICES}
-    existing = {str(item.pk): item for item in parcel.structures.all()}
-    submitted_ids = set()
+    name = models.CharField(
+        max_length=255,
+        help_text="Layer name",
+    )
 
-    for item in structures_data:
-        if not isinstance(item, dict) or item.get("structure_type") not in allowed_types:
-            return "Choose a valid type for every structure."
-        if item.get("condition") and item["condition"] not in allowed_conditions:
-            return "Choose a valid condition for every structure."
-        if item.get("storeys") not in (None, ""):
-            try:
-                if int(item["storeys"]) < 1:
-                    return "Number of storeys must be at least 1."
-            except (TypeError, ValueError):
-                return "Number of storeys must be a whole number."
+    geojson = models.JSONField(
+        help_text="GeoJSON data for the layer",
+    )
 
-    for index, item in enumerate(structures_data):
-        structure_id = str(item.get("id") or "")
-        structure = existing.get(structure_id)
-        if structure_id and structure is None:
-            return "A submitted structure does not belong to this parcel."
-        if structure is None:
-            structure = Structure(parcel=parcel)
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
 
-        structure.sequence = index + 1
-        structure.structure_type = item["structure_type"]
-        structure.storeys = int(item["storeys"]) if item.get("storeys") not in (None, "") else None
-        structure.condition = item.get("condition", "")
-        structure.notes = str(item.get("notes", "")).strip()
-        photo = files.get(f"structure_photo_{index}")
-        if photo:
-            structure.photo = photo
-        structure.save()
-        submitted_ids.add(str(structure.pk))
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
 
-    parcel.structures.exclude(pk__in=submitted_ids).delete()
-    return None
+    class Meta:
+        verbose_name = "Saved Layer"
+        verbose_name_plural = "Saved Layers"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} - {self.user.email}"
+
 
 # ============================================================
-# SAVED LAYERS
+# STRUCTURE
 # ============================================================
 
-@login_required
-@require_http_methods(["GET", "POST"])
-def saved_layers(request):
-    if request.method == "GET":
-        layers = request.user.saved_layers.all().order_by('-created_at')
-        data = [{
-            "id": layer.id,
-            "name": layer.name,
-            "created_at": layer.created_at.isoformat(),
-            "geojson": layer.geojson
-        } for layer in layers]
-        return JsonResponse({"layers": data})
+class Structure(models.Model):
+    """Building or structure on a parcel."""
 
-    # POST: save a new layer
-    try:
-        body = json.loads(request.body)
-        name = body.get("name", "Untitled")
-        geojson = body.get("geojson")
-        if not geojson or not geojson.get("features"):
-            return JsonResponse({"error": "Invalid GeoJSON"}, status=400)
-        layer = SavedParcelLayer.objects.create(
-            user=request.user,
-            name=name,
-            geojson=geojson
-        )
-        return JsonResponse({
-            "id": layer.id,
-            "name": layer.name,
-            "created_at": layer.created_at.isoformat()
-        }, status=201)
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=400)
+    # Structure type choices
+    TYPE_CHOICES = [
+        ("RESIDENTIAL", "Residential Building"),
+        ("COMMERCIAL", "Commercial Building"),
+        ("INDUSTRIAL", "Industrial Building"),
+        ("INSTITUTIONAL", "Institutional Building"),
+        ("AGRICULTURAL", "Agricultural Structure"),
+        ("STORAGE", "Storage Structure"),
+        ("GARAGE", "Garage"),
+        ("SHED", "Shed"),
+        ("TEMPORARY", "Temporary Structure"),
+        ("OTHER", "Other"),
+    ]
 
-@login_required
-@require_http_methods(["DELETE"])
-def delete_saved_layer(request, layer_id):
-    try:
-        layer = request.user.saved_layers.get(id=layer_id)
-        layer.delete()
-        return JsonResponse({"ok": True})
-    except SavedParcelLayer.DoesNotExist:
-        return JsonResponse({"error": "Layer not found"}, status=404)
+    parcel = models.ForeignKey(
+        Parcel,
+        on_delete=models.CASCADE,
+        related_name="structures",
+    )
 
-# ============================================================
-# ADMIN PARCEL VIEWER
-# ============================================================
+    sequence = models.PositiveIntegerField(
+        help_text="Display order within the parcel",
+    )
 
-from django.contrib.admin.views.decorators import staff_member_required
+    structure_type = models.CharField(
+        max_length=50,
+        choices=TYPE_CHOICES,
+        help_text="Type of structure",
+    )
 
-@staff_member_required
-def admin_parcel_viewer(request):
-    parcels = Parcel.objects.all().order_by('parcel_id')
-    return render(request, 'admin/parcel_viewer.html', {'parcels': parcels})
+    storeys = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+        help_text="Number of storeys",
+    )
+
+    condition = models.CharField(
+        max_length=50,
+        choices=Parcel.STATUS_CHOICES,
+        blank=True,
+        help_text="Condition of the structure",
+    )
+
+    notes = models.TextField(
+        blank=True,
+        help_text="Additional notes about the structure",
+    )
+
+    photo = models.ImageField(
+        upload_to="structure_photos/",
+        null=True,
+        blank=True,
+        help_text="Photo of the structure",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        verbose_name = "Structure"
+        verbose_name_plural = "Structures"
+        ordering = ["sequence"]
+
+    def __str__(self):
+        return f"{self.get_structure_type_display()} - {self.parcel.parcel_id}"
