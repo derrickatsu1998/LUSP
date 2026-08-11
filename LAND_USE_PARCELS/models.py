@@ -1,5 +1,5 @@
-import json
 import os
+import json
 import uuid
 
 from django.conf import settings
@@ -12,6 +12,17 @@ from django.db import models
 from django.utils import timezone
 
 User = get_user_model()
+
+
+# ============================================================
+# HELPER FUNCTION FOR STRUCTURE PHOTO UPLOAD
+# ============================================================
+
+def rename_structure_photo(instance, filename):
+    """Rename uploaded structure photos with a consistent pattern."""
+    ext = filename.split('.')[-1]
+    new_filename = f"structure_{instance.parcel.parcel_id}_{instance.sequence}.{ext}"
+    return os.path.join("structure_photos/", new_filename)
 
 
 # ============================================================
@@ -343,7 +354,7 @@ class Structure(models.Model):
     )
 
     photo = models.ImageField(
-        upload_to="structure_photos/",
+        upload_to=rename_structure_photo,  # ✅ Uses the helper function
         null=True,
         blank=True,
         help_text="Photo of the structure",
