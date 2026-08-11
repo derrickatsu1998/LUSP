@@ -15,8 +15,15 @@ User = get_user_model()
 
 
 # ============================================================
-# HELPER FUNCTION FOR STRUCTURE PHOTO UPLOAD
+# HELPER FUNCTIONS FOR FILE UPLOADS
 # ============================================================
+
+def rename_photo(instance, filename):
+    """Rename uploaded parcel photos with a consistent pattern."""
+    ext = filename.split('.')[-1]
+    new_filename = f"parcel_{instance.parcel_id}.{ext}"
+    return os.path.join("parcel_photos/", new_filename)
+
 
 def rename_structure_photo(instance, filename):
     """Rename uploaded structure photos with a consistent pattern."""
@@ -194,7 +201,7 @@ class Parcel(models.Model):
     )
 
     field_photo = models.ImageField(
-        upload_to="parcel_photos/",
+        upload_to=rename_photo,  # ✅ Uses the helper function
         null=True,
         blank=True,
         help_text="Field photo of the parcel",
