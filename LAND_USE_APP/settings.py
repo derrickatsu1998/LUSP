@@ -69,12 +69,21 @@ else:  # Linux (Render)
 # ============================================================
 # SECURITY
 # ============================================================
+# ============================================================
+# SECURITY
+# ============================================================
 
 SECRET_KEY = config("DJANGO_SECRET_KEY", default="django-insecure-change-this-key")
 DEBUG = config("DEBUG", default=True, cast=bool)
 
 ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS", default="127.0.0.1,localhost", cast=Csv())
-CSRF_TRUSTED_ORIGINS = config("DJANGO_CSRF_TRUSTED_ORIGINS", default="", cast=Csv())
+
+# Add this - CSRF trusted origins
+CSRF_TRUSTED_ORIGINS = config(
+    "DJANGO_CSRF_TRUSTED_ORIGINS", 
+    default="https://lusp.onrender.com,https://*.onrender.com", 
+    cast=Csv()
+)
 
 # ============================================================
 # APPLICATIONS

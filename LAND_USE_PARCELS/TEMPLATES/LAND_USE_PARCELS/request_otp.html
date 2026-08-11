@@ -485,6 +485,7 @@
     </div>
 
     <script>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('otpForm');
     const emailInput = document.getElementById('email');
@@ -500,22 +501,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const nextUrl = urlParams.get('next');
 
-    // Get CSRF token from cookie
+    // Get CSRF token from the form's hidden input (most reliable)
     function getCSRFToken() {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            const [name, value] = cookie.trim().split('=');
-            if (name === 'csrftoken') {
-                return value;
-            }
+        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (csrfInput) {
+            return csrfInput.value;
         }
-        return null;
+        // Fallback: try to get from cookie
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        return cookieValue || '';
     }
 
     if (emailInput) {
         emailInput.focus();
     }
 
+    // Prevent default form submission - let fetch handle it
     form.addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -541,18 +545,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData(form);
         const csrfToken = getCSRFToken();
         
+        // Log for debugging
+        console.log('CSRF Token:', csrfToken);
+        
         fetch('/request-otp/', {
             method: 'POST',
             body: formData,
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': csrfToken || ''
+                'X-CSRFToken': csrfToken
             },
             credentials: 'same-origin'
         })
         .then(response => {
+            if (response.status === 403) {
+                throw new Error('CSRF verification failed. Please refresh and try again.');
+            }
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error('Server error: ' + response.status);
             }
             return response.json();
         })
@@ -578,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
             isSubmitting = false;
             submitBtn.disabled = false;
             submitBtn.textContent = '🔑 Send One-Time Password';
-            showMessage('❌ Network error. Please check your connection.', 'error');
+            showMessage('❌ ' + error.message, 'error');
         });
     });
 
