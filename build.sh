@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 set -o errexit
 
-# Install system GDAL and GEOS (required for GeoDjango)
+echo "=== Installing system GDAL ==="
 apt-get update
 apt-get install -y gdal-bin libgdal-dev
+echo "=== GDAL installation complete ==="
 
-# Install Python dependencies
+echo "=== Installing Python dependencies ==="
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Collect static files
+echo "=== Collecting static files ==="
 python manage.py collectstatic --no-input
 
-# Run migrations
+echo "=== Running migrations ==="
 python manage.py migrate
