@@ -82,5 +82,8 @@ urlpatterns = [
     path('api/saved-layers/<int:layer_id>/', views.delete_saved_layer, name='delete_saved_layer'),
 
     path('admin/parcel-viewer/', views.admin_parcel_viewer, name='admin_parcel_viewer'),
+
+    path('parcel/<str:parcel_id>/', views.parcel_detail_view, name='parcel_detail'),
 ]
+
 

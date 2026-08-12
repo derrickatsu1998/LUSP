@@ -629,3 +629,11 @@ from django.contrib.admin.views.decorators import staff_member_required
 def admin_parcel_viewer(request):
     parcels = Parcel.objects.all().order_by('parcel_id')
     return render(request, 'admin/parcel_viewer.html', {'parcels': parcels})
+
+
+@login_required(login_url="request_otp")
+def parcel_detail_view(request, parcel_id):
+    """Display parcel details with GPS navigation."""
+    parcel = get_object_or_404(Parcel, parcel_id=parcel_id)
+    return render(request, 'LAND_USE_PARCELS/parcel_detail.html', {'parcel': parcel})
+
