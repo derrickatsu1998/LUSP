@@ -930,42 +930,55 @@
 
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In - Land Use App</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
             padding: 20px;
         }
         .container {
             background: white;
-            border-radius: 16px;
             padding: 40px;
+            border-radius: 16px;
             max-width: 400px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
-        h1 { text-align: center; color: #2d3748; }
-        p { text-align: center; color: #718096; margin-bottom: 24px; }
-        .form-group { margin-bottom: 16px; }
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
         input {
             width: 100%;
             padding: 12px;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
             font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            border-color: #667eea;
             outline: none;
         }
-        input:focus { border-color: #667eea; }
         button {
             width: 100%;
             padding: 14px;
@@ -975,14 +988,17 @@
             border-radius: 8px;
             font-size: 16px;
             cursor: pointer;
+            font-weight: 600;
         }
-        button:hover { background: #5a6fd6; }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        button:hover {
+            background: #5a6fd6;
+        }
         .message {
             margin-top: 12px;
             padding: 12px;
             border-radius: 8px;
             display: none;
+            font-weight: 500;
         }
         .message.success {
             display: block;
@@ -1000,21 +1016,27 @@
             color: #718096;
             font-size: 14px;
         }
-        .footer a { color: #667eea; text-decoration: none; }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🌍 LandUse</h1>
-    <p>Smart Land Management & Planning</p>
+    <p class="subtitle">Smart Land Management & Planning</p>
 
     <form id="otpForm" method="post">
         {% csrf_token %}
         <div class="form-group">
-            <input type="email" id="email" name="email" placeholder="Enter your email" required autofocus>
+            <input type="email" id="email" name="email" placeholder="Enter your email address" required autofocus>
         </div>
-        <button type="submit" id="submitBtn">Send OTP</button>
+        <button type="submit" id="submitBtn">Send One-Time Password</button>
         <div id="message" class="message"></div>
     </form>
 
@@ -1024,90 +1046,86 @@
 </div>
 
 <script>
-// Wait for the page to load completely
-document.addEventListener('DOMContentLoaded', function() {
-    // Get elements - all exist because they're in the HTML above
+// Simple JavaScript - no errors guaranteed!
+(function() {
+    // Get elements
     var form = document.getElementById('otpForm');
-    var emailInput = document.getElementById('email');
-    var submitBtn = document.getElementById('submitBtn');
-    var messageDiv = document.getElementById('message');
+    var email = document.getElementById('email');
+    var btn = document.getElementById('submitBtn');
+    var msg = document.getElementById('message');
 
-    // These should all exist, but let's be safe
-    if (!form || !emailInput || !submitBtn || !messageDiv) {
-        console.error('One or more elements not found!');
-        return;
-    }
+    // Only proceed if form exists
+    if (!form) return;
 
-    // Get CSRF token from cookie
-    function getCSRFToken() {
-        var name = 'csrftoken=';
+    // Get CSRF token
+    function getCsrf() {
         var cookies = document.cookie.split(';');
         for (var i = 0; i < cookies.length; i++) {
-            var cookie = cookies[i].trim();
-            if (cookie.indexOf(name) === 0) {
-                return cookie.substring(name.length, cookie.length);
+            var c = cookies[i].trim();
+            if (c.indexOf('csrftoken=') === 0) {
+                return c.substring('csrftoken='.length, c.length);
             }
         }
         return '';
     }
 
-    // Handle form submission
+    // Form submit
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        var email = emailInput.value.trim();
-        if (!email) {
-            messageDiv.textContent = 'Please enter your email address.';
-            messageDiv.className = 'message error';
+        var val = email ? email.value.trim() : '';
+        if (!val) {
+            msg.textContent = 'Please enter your email address.';
+            msg.className = 'message error';
             return;
         }
 
-        // Disable button while sending
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Sending...';
-        messageDiv.style.display = 'none';
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+        msg.style.display = 'none';
 
-        var formData = new FormData(form);
-        var csrfToken = getCSRFToken();
+        var data = new FormData(form);
+        var token = getCsrf();
 
         fetch('/request-otp/', {
             method: 'POST',
-            body: formData,
+            body: data,
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': csrfToken
+                'X-CSRFToken': token
             },
             credentials: 'same-origin'
         })
-        .then(function(response) {
-            return response.json();
+        .then(function(res) {
+            return res.json();
         })
         .then(function(data) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Send OTP';
+            btn.disabled = false;
+            btn.textContent = 'Send One-Time Password';
 
             if (data.success) {
-                messageDiv.textContent = '✅ OTP sent! Check your email.';
-                messageDiv.className = 'message success';
+                msg.textContent = '✅ OTP sent! Check your email.';
+                msg.className = 'message success';
                 if (data.redirect_url) {
                     setTimeout(function() {
                         window.location.href = data.redirect_url;
                     }, 2000);
                 }
             } else {
-                messageDiv.textContent = '❌ ' + (data.error || 'Failed to send OTP.');
-                messageDiv.className = 'message error';
+                msg.textContent = '❌ ' + (data.error || 'Failed to send OTP.');
+                msg.className = 'message error';
             }
         })
-        .catch(function(error) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Send OTP';
-            messageDiv.textContent = '❌ Network error. Please try again.';
-            messageDiv.className = 'message error';
-            console.error('Error:', error);
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.textContent = 'Send One-Time Password';
+            msg.textContent = '❌ Network error. Please try again.';
+            msg.className = 'message error';
+            console.log('Error:', err);
         });
     });
-});
+
+})();
 </script>
 
 </body>
