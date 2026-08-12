@@ -7,15 +7,7 @@
     <title>Sign In - Land Use App</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        /* ============================================================
-           RESET & BASE
-           ============================================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
@@ -27,8 +19,6 @@
             position: relative;
             overflow: hidden;
         }
-
-        /* Animated background with land use pattern */
         body::before {
             content: '';
             position: fixed;
@@ -38,10 +28,8 @@
             bottom: 0;
             z-index: 0;
             background:
-                /* Grid pattern */
                 linear-gradient(rgba(102, 126, 234, 0.08) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(102, 126, 234, 0.08) 1px, transparent 1px),
-                /* Land use color blocks */
                 repeating-linear-gradient(45deg,
                     rgba(76, 175, 80, 0.12) 0px,
                     rgba(76, 175, 80, 0.12) 20px,
@@ -52,19 +40,10 @@
                     rgba(156, 39, 176, 0.12) 60px,
                     rgba(156, 39, 176, 0.12) 80px
                 ),
-                /* Dark overlay */
                 radial-gradient(ellipse at center, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
             background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%;
             background-blend-mode: overlay;
-            animation: gridPulse 8s ease-in-out infinite;
         }
-
-        @keyframes gridPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        /* Floating icons */
         .floating-icons {
             position: fixed;
             top: 0;
@@ -75,7 +54,6 @@
             pointer-events: none;
             overflow: hidden;
         }
-
         .floating-icons i {
             position: absolute;
             font-size: 2.5rem;
@@ -83,16 +61,11 @@
             color: white;
             animation: floatIcon 20s ease-in-out infinite;
         }
-
         @keyframes floatIcon {
             0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
             25% { transform: translateY(-30px) rotate(5deg) scale(1.1); }
             75% { transform: translateY(20px) rotate(-5deg) scale(0.9); }
         }
-
-        /* ============================================================
-           MAIN CARD
-           ============================================================ */
         .container {
             position: relative;
             z-index: 1;
@@ -103,29 +76,9 @@
             max-width: 440px;
             width: 100%;
             box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
-            animation: slideUp 0.7s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px) scale(0.96);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        /* ============================================================
-           LOGO
-           ============================================================ */
-        .logo {
-            text-align: center;
-            margin-bottom: 36px;
-        }
-
+        .logo { text-align: center; margin-bottom: 36px; }
         .logo-icon {
             display: inline-flex;
             align-items: center;
@@ -137,34 +90,20 @@
             font-size: 36px;
             margin-bottom: 16px;
             box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
-            transition: transform 0.3s;
         }
-
-        .logo-icon:hover {
-            transform: scale(1.05) rotate(-5deg);
-        }
-
         .logo h1 {
             font-size: 32px;
             font-weight: 900;
             color: #0f172a;
             letter-spacing: -0.5px;
         }
-
         .logo h1 span {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-
-        .logo p {
-            color: #64748b;
-            font-size: 15px;
-            font-weight: 400;
-            margin-top: 4px;
-        }
-
+        .logo p { color: #64748b; font-size: 15px; margin-top: 4px; }
         .badge {
             display: inline-block;
             background: #ebf8ff;
@@ -177,14 +116,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
-        /* ============================================================
-           FORM
-           ============================================================ */
-        .form-group {
-            margin-bottom: 24px;
-        }
-
+        .form-group { margin-bottom: 24px; }
         .form-group label {
             display: block;
             font-weight: 600;
@@ -192,16 +124,8 @@
             margin-bottom: 8px;
             font-size: 14px;
         }
-
-        .form-group label .required {
-            color: #e53e3e;
-            margin-left: 2px;
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
+        .form-group label .required { color: #e53e3e; margin-left: 2px; }
+        .input-wrapper { position: relative; }
         .input-wrapper .input-icon {
             position: absolute;
             left: 16px;
@@ -212,7 +136,6 @@
             transition: color 0.3s;
             pointer-events: none;
         }
-
         .form-group input {
             width: 100%;
             padding: 14px 16px 14px 48px;
@@ -225,24 +148,12 @@
             background: #f8fafc;
             color: #0f172a;
         }
-
         .form-group input:focus {
             border-color: #667eea;
             background: #ffffff;
             box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
         }
-
-        .form-group input:focus + .input-icon {
-            color: #667eea;
-        }
-
-        .form-group input::placeholder {
-            color: #94a3b8;
-        }
-
-        /* ============================================================
-           BUTTON
-           ============================================================ */
+        .form-group input::placeholder { color: #94a3b8; }
         .btn {
             width: 100%;
             padding: 16px;
@@ -258,7 +169,6 @@
             position: relative;
             overflow: hidden;
         }
-
         .btn::before {
             content: '';
             position: absolute;
@@ -269,26 +179,16 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
             transition: left 0.6s;
         }
-
-        .btn:hover::before {
-            left: 100%;
-        }
-
+        .btn:hover::before { left: 100%; }
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 16px 48px rgba(102, 126, 234, 0.4);
         }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
-
         .btn .spinner {
             display: none;
             width: 20px;
@@ -299,37 +199,17 @@
             animation: spin 0.8s linear infinite;
             margin: 0 auto;
         }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .btn.loading .spinner {
-            display: block;
-        }
-
-        .btn.loading .btn-text {
-            display: none;
-        }
-
-        /* ============================================================
-           MESSAGES
-           ============================================================ */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn.loading .spinner { display: block; }
+        .btn.loading .btn-text { display: none; }
         .message {
             margin-top: 16px;
             padding: 14px 16px;
             border-radius: 12px;
             font-size: 14px;
             display: none;
-            animation: fadeSlide 0.4s ease-out;
             font-weight: 500;
         }
-
-        @keyframes fadeSlide {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         .message.success {
             display: flex;
             align-items: center;
@@ -338,11 +218,6 @@
             color: #22543d;
             border: 1px solid #c6f6d5;
         }
-
-        .message.success .icon {
-            font-size: 20px;
-        }
-
         .message.error {
             display: flex;
             align-items: center;
@@ -351,11 +226,6 @@
             color: #9b2c2c;
             border: 1px solid #fed7d7;
         }
-
-        .message.error .icon {
-            font-size: 20px;
-        }
-
         .message.info {
             display: flex;
             align-items: center;
@@ -364,14 +234,7 @@
             color: #2a4365;
             border: 1px solid #bee3f8;
         }
-
-        .message.info .icon {
-            font-size: 20px;
-        }
-
-        /* ============================================================
-           TIMER
-           ============================================================ */
+        .message .icon { font-size: 20px; }
         .otp-timer {
             text-align: center;
             margin-top: 16px;
@@ -383,7 +246,6 @@
             display: none;
             border: 1px solid #e2e8f0;
         }
-
         .otp-timer .timer-number {
             font-weight: 700;
             font-size: 22px;
@@ -391,14 +253,6 @@
             min-width: 30px;
             display: inline-block;
         }
-
-        .otp-timer .progress-ring {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 8px;
-            display: block;
-        }
-
         .resend-btn {
             background: none;
             border: none;
@@ -412,20 +266,12 @@
             font-size: 14px;
             font-family: 'Inter', sans-serif;
         }
-
-        .resend-btn:hover:not(:disabled) {
-            background: #ebf8ff;
-        }
-
+        .resend-btn:hover:not(:disabled) { background: #ebf8ff; }
         .resend-btn:disabled {
             color: #94a3b8;
             cursor: not-allowed;
             text-decoration: none;
         }
-
-        /* ============================================================
-           FOOTER
-           ============================================================ */
         .footer {
             text-align: center;
             margin-top: 28px;
@@ -434,36 +280,8 @@
             padding-top: 20px;
             border-top: 1px solid #e2e8f0;
         }
-
-        .footer a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s;
-        }
-
-        .footer a:hover {
-            color: #5a6fd6;
-            text-decoration: underline;
-        }
-
-        .footer .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin-bottom: 12px;
-        }
-
-        .footer .social-links a {
-            font-size: 20px;
-            color: #94a3b8;
-            transition: color 0.3s;
-        }
-
-        .footer .social-links a:hover {
-            color: #667eea;
-        }
-
+        .footer a { color: #667eea; text-decoration: none; font-weight: 600; }
+        .footer a:hover { text-decoration: underline; }
         .secure-badge {
             display: flex;
             align-items: center;
@@ -473,136 +291,37 @@
             font-size: 13px;
             color: #94a3b8;
         }
-
-        .secure-badge .lock {
-            font-size: 16px;
-        }
-
-        /* ============================================================
-           RESPONSIVE
-           ============================================================ */
+        .secure-badge .lock { font-size: 16px; }
         @media (max-width: 480px) {
-            .container {
-                padding: 32px 24px;
-                margin: 12px;
-                border-radius: 24px;
-            }
-
-            .logo h1 {
-                font-size: 26px;
-            }
-
-            .logo-icon {
-                width: 60px;
-                height: 60px;
-                font-size: 28px;
-            }
-
-            .form-group input {
-                font-size: 15px;
-                padding: 12px 14px 12px 44px;
-            }
-
-            .btn {
-                font-size: 15px;
-                padding: 14px;
-            }
-
-            .floating-icons i {
-                font-size: 1.8rem;
-            }
+            .container { padding: 32px 24px; margin: 12px; border-radius: 24px; }
+            .logo h1 { font-size: 26px; }
+            .logo-icon { width: 60px; height: 60px; font-size: 28px; }
+            .form-group input { font-size: 15px; padding: 12px 14px 12px 44px; }
+            .btn { font-size: 15px; padding: 14px; }
         }
-
-        @media (max-width: 380px) {
-            .container {
-                padding: 24px 16px;
-            }
-
-            .logo h1 {
-                font-size: 22px;
-            }
-
-            .otp-timer .timer-number {
-                font-size: 18px;
-            }
-        }
-
-        /* ============================================================
-           DARK MODE SUPPORT
-           ============================================================ */
         @media (prefers-color-scheme: dark) {
-            .container {
-                background: rgba(30, 41, 59, 0.98);
-            }
-
-            .logo h1 {
-                color: #f1f5f9;
-            }
-
-            .logo p {
-                color: #94a3b8;
-            }
-
-            .form-group label {
-                color: #e2e8f0;
-            }
-
+            .container { background: rgba(30, 41, 59, 0.98); }
+            .logo h1 { color: #f1f5f9; }
+            .logo p { color: #94a3b8; }
+            .form-group label { color: #e2e8f0; }
             .form-group input {
                 background: #1e293b;
                 border-color: #334155;
                 color: #f1f5f9;
             }
-
-            .form-group input:focus {
-                background: #1e293b;
-                border-color: #667eea;
-            }
-
-            .form-group input::placeholder {
-                color: #64748b;
-            }
-
-            .otp-timer {
-                background: #1e293b;
-                border-color: #334155;
-                color: #94a3b8;
-            }
-
-            .footer {
-                border-top-color: #334155;
-                color: #64748b;
-            }
-
-            .message.success {
-                background: #0f2b24;
-                color: #a7f3d0;
-                border-color: #065f46;
-            }
-
-            .message.error {
-                background: #2b0f0f;
-                color: #fca5a5;
-                border-color: #7f1d1d;
-            }
-
-            .message.info {
-                background: #0f1f2b;
-                color: #93c5fd;
-                border-color: #1e3a5f;
-            }
-
-            .badge {
-                background: #1e3a5f;
-                color: #93c5fd;
-            }
+            .form-group input:focus { background: #1e293b; border-color: #667eea; }
+            .form-group input::placeholder { color: #64748b; }
+            .otp-timer { background: #1e293b; border-color: #334155; color: #94a3b8; }
+            .footer { border-top-color: #334155; color: #64748b; }
+            .message.success { background: #0f2b24; color: #a7f3d0; border-color: #065f46; }
+            .message.error { background: #2b0f0f; color: #fca5a5; border-color: #7f1d1d; }
+            .message.info { background: #0f1f2b; color: #93c5fd; border-color: #1e3a5f; }
+            .badge { background: #1e3a5f; color: #93c5fd; }
         }
     </style>
 </head>
 <body>
 
-    <!-- ============================================================
-    FLOATING ICONS
-    ============================================================ -->
     <div class="floating-icons">
         <i style="top: 8%; left: 4%; animation-delay: 0s;">🏗️</i>
         <i style="top: 15%; right: 6%; animation-delay: 2.5s;">🌳</i>
@@ -614,9 +333,6 @@
         <i style="top: 5%; left: 48%; animation-delay: 4.5s;">📊</i>
     </div>
 
-    <!-- ============================================================
-    MAIN CONTAINER
-    ============================================================ -->
     <div class="container">
         <div class="logo">
             <div class="logo-icon">🌍</div>
@@ -652,29 +368,6 @@
             <div id="message" class="message"></div>
 
             <div id="otpTimer" class="otp-timer">
-                <svg class="progress-ring" viewBox="0 0 60 60">
-                    <circle
-                        cx="30"
-                        cy="30"
-                        r="26"
-                        fill="none"
-                        stroke="#e2e8f0"
-                        stroke-width="4"
-                    />
-                    <circle
-                        id="timerCircle"
-                        cx="30"
-                        cy="30"
-                        r="26"
-                        fill="none"
-                        stroke="#667eea"
-                        stroke-width="4"
-                        stroke-dasharray="163.36"
-                        stroke-dashoffset="0"
-                        stroke-linecap="round"
-                        transform="rotate(-90 30 30)"
-                    />
-                </svg>
                 <div>
                     <span>Resend available in </span>
                     <span class="timer-number" id="timerCountdown">60</span>
@@ -692,27 +385,19 @@
         </form>
 
         <div class="footer">
-            <div class="social-links">
-                <a href="#" title="Twitter">🐦</a>
-                <a href="#" title="GitHub">🐙</a>
-                <a href="#" title="LinkedIn">💼</a>
-            </div>
             Need help? <a href="mailto:support@landuse.com">Contact Support</a>
             <br>
             <span style="font-size: 12px; color: #94a3b8;">&copy; 2026 LandUse App. All rights reserved.</span>
         </div>
     </div>
 
-    <!-- ============================================================
-    JAVASCRIPT
-    ============================================================ -->
     <script>
-        (function() {
-            'use strict';
+        // ============================================================
+        // ALL JAVASCRIPT WRAPPED IN DOMContentLoaded
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
 
-            // ============================================================
-            // DOM REFS
-            // ============================================================
+            // Get elements
             var form = document.getElementById('otpForm');
             var emailInput = document.getElementById('email');
             var submitBtn = document.getElementById('submitBtn');
@@ -720,17 +405,17 @@
             var otpTimerDiv = document.getElementById('otpTimer');
             var timerCountdown = document.getElementById('timerCountdown');
             var resendBtn = document.getElementById('resendBtn');
-            var timerCircle = document.getElementById('timerCircle');
 
-            if (!form) return;
+            // Exit if form doesn't exist
+            if (!form) {
+                console.error('Form not found!');
+                return;
+            }
 
             var countdownInterval = null;
             var isSubmitting = false;
-            var timerRemaining = 0;
 
-            // ============================================================
-            // CSRF TOKEN
-            // ============================================================
+            // Get CSRF token
             function getCSRFToken() {
                 var name = 'csrftoken=';
                 var cookies = document.cookie.split(';');
@@ -743,70 +428,52 @@
                 return '';
             }
 
-            // ============================================================
-            // VALIDATION
-            // ============================================================
+            // Validate email
             function isValidEmail(email) {
                 return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
             }
 
-            // ============================================================
-            // MESSAGES
-            // ============================================================
+            // Show message
             function showMessage(text, type) {
                 if (!messageDiv) return;
-                var icons = {
-                    success: '✅',
-                    error: '❌',
-                    info: 'ℹ️'
-                };
+                var icons = { success: '✅', error: '❌', info: 'ℹ️' };
                 messageDiv.innerHTML = '<span class="icon">' + (icons[type] || 'ℹ️') + '</span> ' + text;
                 messageDiv.className = 'message ' + (type || 'info');
                 messageDiv.style.display = 'flex';
             }
 
+            // Hide message
             function hideMessage() {
                 if (!messageDiv) return;
                 messageDiv.style.display = 'none';
             }
 
-            // ============================================================
-            // TIMER
-            // ============================================================
+            // Start countdown timer
             function startCountdown(seconds) {
-                timerRemaining = seconds;
-                if (!otpTimerDiv || !timerCountdown || !resendBtn || !timerCircle) return;
+                if (!otpTimerDiv || !timerCountdown || !resendBtn) return;
 
+                var remaining = seconds;
                 otpTimerDiv.style.display = 'block';
-                timerCountdown.textContent = seconds;
+                timerCountdown.textContent = remaining;
                 resendBtn.disabled = true;
-
-                var circumference = 2 * Math.PI * 26; // ~163.36
 
                 if (countdownInterval) {
                     clearInterval(countdownInterval);
                 }
 
                 countdownInterval = setInterval(function() {
-                    timerRemaining--;
-                    timerCountdown.textContent = timerRemaining;
+                    remaining--;
+                    timerCountdown.textContent = remaining;
 
-                    // Update progress circle
-                    var offset = circumference - (timerRemaining / seconds) * circumference;
-                    timerCircle.style.strokeDashoffset = offset;
-
-                    if (timerRemaining <= 0) {
+                    if (remaining <= 0) {
                         clearInterval(countdownInterval);
                         resendBtn.disabled = false;
                         timerCountdown.textContent = '0';
-                        timerCircle.style.strokeDashoffset = 0;
                     }
                 }, 1000);
             }
 
-            // ============================================================
-            // FORM SUBMIT
-            // ============================================================
+            // Form submit
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
 
@@ -881,9 +548,7 @@
                 });
             });
 
-            // ============================================================
-            // RESEND
-            // ============================================================
+            // Resend button
             if (resendBtn) {
                 resendBtn.addEventListener('click', function() {
                     if (!resendBtn.disabled) {
@@ -892,9 +557,7 @@
                 });
             }
 
-            // ============================================================
-            // ENTER KEY SUPPORT
-            // ============================================================
+            // Enter key support
             if (emailInput) {
                 emailInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter') {
@@ -904,25 +567,22 @@
                 });
             }
 
-            // ============================================================
-            // AUTO FOCUS
-            // ============================================================
+            // Auto focus
             if (emailInput) {
                 setTimeout(function() {
                     emailInput.focus();
-                }, 100);
+                }, 200);
             }
 
-            // ============================================================
-            // CHECK FOR NEXT URL PARAM
-            // ============================================================
+            // Check for next URL parameter
             var urlParams = new URLSearchParams(window.location.search);
             var nextUrl = urlParams.get('next');
             if (nextUrl) {
                 showMessage('Please sign in to continue.', 'info');
             }
 
-        })();
+            console.log('OTP page loaded successfully!');
+        });
     </script>
 
 </body>
