@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% comment %} <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -65,5 +65,21 @@
             });
         });
     </script>
+</body>
+</html> {% endcomment %}
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign In</title>
+</head>
+<body>
+    <h1>LandUse App</h1>
+    <form method="post">
+        {% csrf_token %}
+        <input type="email" name="email" placeholder="Enter your email">
+        <button type="submit">Send OTP</button>
+    </form>
 </body>
 </html>
