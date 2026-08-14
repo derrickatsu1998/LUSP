@@ -12,12 +12,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods
 from django.contrib.admin.views.decorators import staff_member_required
 
-# Import models from the same app
 from .models import OTPCode, Parcel, SavedParcelLayer, Structure
-
-# ============================================================
-# USER MODEL
-# ============================================================
 
 User = get_user_model()
 
@@ -93,25 +88,12 @@ def structure_payload(structure):
 @ensure_csrf_cookie
 @require_http_methods(["GET", "POST"])
 def request_otp_view(request):
-    """
-    Request a six-digit OTP using an email address.
-    Supports both regular form submission and AJAX requests.
-    """
-    
-    # GET - Return the HTML page
     if request.method == "GET":
-        return render(
-            request,
-            "LAND_USE_PARCELS/request_otp.html",
-        )
+        return render(request, "LAND_USE_PARCELS/request_otp.html")
 
-    # POST - Handle AJAX or regular form submission
     email = request.POST.get("email", "").strip().lower()
-    
-    # Check if this is an AJAX request
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    
-    # Validate email
+
     if not email:
         if is_ajax:
             return JsonResponse({'success': False, 'error': 'Please enter your email address.'})
@@ -124,7 +106,6 @@ def request_otp_view(request):
             return JsonResponse({'success': False, 'error': 'Please enter a valid email address.'})
         return render(request, "LAND_USE_PARCELS/request_otp.html", {"error": "Please enter a valid email address."})
 
-    # Find or create user
     user = User.objects.filter(email__iexact=email).first()
     if user is None:
         user = User.objects.create_user(username=email, email=email)
@@ -133,14 +114,11 @@ def request_otp_view(request):
         user.is_active = True
         user.save(update_fields=["is_active"])
 
-    # Invalidate old OTPs
     OTPCode.objects.filter(user=user, is_used=False).update(is_used=True)
 
-    # Generate new OTP
     code = OTPCode.generate_otp()
     otp = OTPCode.objects.create(user=user, code=code)
 
-    # Send email
     try:
         send_mail(
             subject="Land Use Survey System - Verification Code",
@@ -156,19 +134,16 @@ def request_otp_view(request):
             return JsonResponse({'success': False, 'error': error_msg})
         return render(request, "LAND_USE_PARCELS/request_otp.html", {"error": error_msg})
 
-    # Store email in session
     request.session["otp_email"] = email
     request.session.modified = True
 
-    # Return response
     if is_ajax:
         return JsonResponse({
             'success': True,
             'message': 'OTP sent successfully!',
             'redirect_url': request.build_absolute_uri('/verify-otp/')
         })
-    
-    # Regular form submission – redirect to verify page
+
     return redirect("verify_otp")
 
 # ============================================================
@@ -178,114 +153,62 @@ def request_otp_view(request):
 @ensure_csrf_cookie
 @require_http_methods(["GET", "POST"])
 def verify_otp_view(request):
-    """
-    Verify the latest unused six-digit OTP and log the user into Django.
-    """
-    
-    # Get email from session
     email = request.session.get("otp_email")
 
-    # GET request
     if request.method == "GET":
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-            },
-        )
+        return render(request, "LAND_USE_PARCELS/verify_otp.html", {"email": email})
 
-    # POST requires session email
     if not email:
         return redirect("request_otp")
 
-    # Get submitted OTP
     code = request.POST.get("code", "").strip()
-    
-    # Keep only numeric characters
     code = "".join(char for char in code if char.isdigit())
 
-    # OTP must contain exactly six digits
     if len(code) != 6:
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-                "error": "Please enter the complete 6-digit verification code.",
-            },
-        )
+        return render(request, "LAND_USE_PARCELS/verify_otp.html", {
+            "email": email,
+            "error": "Please enter the complete 6-digit verification code.",
+        })
 
-    # Find user
     user = User.objects.filter(email__iexact=email).first()
     if user is None:
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-                "error": "User account could not be found. Please request a new verification code.",
-            },
-        )
+        return render(request, "LAND_USE_PARCELS/verify_otp.html", {
+            "email": email,
+            "error": "User account could not be found. Please request a new verification code.",
+        })
 
-    # Find latest unused OTP
-    otp = (
-        OTPCode.objects
-        .filter(user=user, is_used=False)
-        .order_by("-created_at")
-        .first()
-    )
+    otp = OTPCode.objects.filter(user=user, is_used=False).order_by("-created_at").first()
     if otp is None:
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-                "error": "No active verification code was found. Please request a new code.",
-            },
-        )
+        return render(request, "LAND_USE_PARCELS/verify_otp.html", {
+            "email": email,
+            "error": "No active verification code was found. Please request a new code.",
+        })
 
-    # Check OTP code
     if str(otp.code).strip() != code:
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-                "error": "Invalid verification code. Please enter the latest code sent to your email.",
-            },
-        )
+        return render(request, "LAND_USE_PARCELS/verify_otp.html", {
+            "email": email,
+            "error": "Invalid verification code. Please enter the latest code sent to your email.",
+        })
 
-    # Check OTP expiration
     if not otp.is_valid():
         otp.is_used = True
         otp.save(update_fields=["is_used"])
-        return render(
-            request,
-            "LAND_USE_PARCELS/verify_otp.html",
-            {
-                "email": email,
-                "error": "This verification code has expired. Please request a new code.",
-            },
-        )
+        return render(request, "LAND_USE_PARCELS/verify_otp.html", {
+            "email": email,
+            "error": "This verification code has expired. Please request a new code.",
+        })
 
-    # OTP is valid - mark as used
     otp.is_used = True
     otp.save(update_fields=["is_used"])
 
-    # Activate user
     if hasattr(user, "is_active") and not user.is_active:
         user.is_active = True
         user.save(update_fields=["is_active"])
 
-    # Log user in
     login(request, user)
-
-    # Remove temporary OTP session data
     request.session.pop("otp_email", None)
     request.session.modified = True
 
-    # Redirect to map
     return redirect("map_view")
 
 # ============================================================
@@ -293,7 +216,6 @@ def verify_otp_view(request):
 # ============================================================
 
 def logout_view(request):
-    """Log the current user out and return to OTP login."""
     logout(request)
     return redirect("request_otp")
 
@@ -303,7 +225,6 @@ def logout_view(request):
 
 @login_required(login_url="request_otp")
 def map_view(request):
-    """Main LUSP map page."""
     return render(request, "LAND_USE_PARCELS/map.html")
 
 # ============================================================
@@ -313,7 +234,6 @@ def map_view(request):
 @login_required(login_url="request_otp")
 @require_GET
 def get_parcel_data(request):
-    """Return all parcels with valid coordinates as a GeoJSON FeatureCollection."""
     parcels = Parcel.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
     features = [parcel_feature(parcel) for parcel in parcels]
     return JsonResponse({"type": "FeatureCollection", "features": features})
@@ -325,8 +245,6 @@ def get_parcel_data(request):
 @login_required(login_url="request_otp")
 @require_http_methods(["GET", "POST"])
 def parcel_survey(request, parcel_id):
-    """Read or save field survey information for a parcel."""
-    
     if request.method == "GET":
         try:
             parcel = Parcel.objects.get(parcel_id=parcel_id)
@@ -343,22 +261,17 @@ def parcel_survey(request, parcel_id):
             "master_plan_zone": parcel.master_plan_zone,
             "field_land_use": parcel.field_land_use,
             "field_land_use_display": (
-                parcel.get_field_land_use_display()
-                if parcel.field_land_use
-                else "Not Verified"
+                parcel.get_field_land_use_display() if parcel.field_land_use else "Not Verified"
             ),
             "field_structure_status": parcel.field_structure_status,
             "field_structure_status_display": (
-                parcel.get_field_structure_status_display()
-                if parcel.field_structure_status
-                else "Not Recorded"
+                parcel.get_field_structure_status_display() if parcel.field_structure_status else "Not Recorded"
             ),
             "field_notes": parcel.field_notes,
             "field_photo_url": parcel.field_photo.url if parcel.field_photo else None,
             "is_verified": parcel.is_verified,
         })
 
-    # POST
     parcel, created = Parcel.objects.get_or_create(parcel_id=parcel_id)
     error = save_survey_fields(
         parcel=parcel,
@@ -382,18 +295,14 @@ def parcel_survey(request, parcel_id):
 # ============================================================
 
 def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
-    """Validate and save field survey information. Returns None on success, error string on failure."""
-    
     allowed_land_uses = {value for value, _ in Parcel.LAND_USE_CHOICES}
     allowed_statuses = {value for value, _ in Parcel.STATUS_CHOICES}
 
-    # Basic text fields
     for field in ("parcel_name", "street", "section", "section_number", "field_notes"):
         if field in data:
             value = data.get(field, "").strip()
             setattr(parcel, field, value)
 
-    # Coordinates
     for field in ("latitude", "longitude"):
         if field in data:
             value = data.get(field, "").strip()
@@ -405,25 +314,21 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
             except (TypeError, ValueError):
                 return f"Invalid {field} value."
 
-    # Land use
     if "field_land_use" in data:
         value = data.get("field_land_use", "").strip()
         if value and value not in allowed_land_uses:
             return "Invalid land-use value."
         parcel.field_land_use = value
 
-    # Structure status
     if "field_structure_status" in data:
         value = data.get("field_structure_status", "").strip()
         if value and value not in allowed_statuses:
             return "Invalid structure-status value."
         parcel.field_structure_status = value
 
-    # Photo
     if files.get(photo_field):
         parcel.field_photo = files[photo_field]
 
-    # Verification
     parcel.is_verified = True
     parcel.last_edited_by = user
     parcel.save()
@@ -436,8 +341,6 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
 @login_required(login_url="request_otp")
 @require_http_methods(["POST"])
 def update_parcel(request):
-    """Backwards-compatible endpoint for the older mobile form."""
-    
     parcel_id = request.POST.get("parcel_id", "").strip()
     if not parcel_id:
         return JsonResponse({"success": False, "message": "parcel_id is required."}, status=400)
@@ -472,7 +375,6 @@ def update_parcel(request):
 @login_required(login_url="request_otp")
 @require_GET
 def get_zones_geojson(request):
-    """Return master-plan zones as GeoJSON."""
     parcels = Parcel.objects.exclude(master_plan_zone="").exclude(latitude__isnull=True).exclude(longitude__isnull=True)
     features = []
     for parcel in parcels:
@@ -488,7 +390,6 @@ def get_zones_geojson(request):
 @login_required(login_url="request_otp")
 @require_GET
 def export_verified_geojson(request):
-    """Export verified parcels as a GeoJSON FeatureCollection."""
     parcels = Parcel.objects.filter(is_verified=True).exclude(latitude__isnull=True).exclude(longitude__isnull=True)
     geojson = {"type": "FeatureCollection", "features": [parcel_feature(parcel) for parcel in parcels]}
     response = HttpResponse(
@@ -505,7 +406,6 @@ def export_verified_geojson(request):
 @login_required(login_url="request_otp")
 @require_GET
 def conformance_check(request, parcel_id):
-    """Return available parcel information for a conformance check."""
     parcel = get_object_or_404(Parcel, parcel_id=parcel_id)
     return JsonResponse({
         "parcel_id": parcel.parcel_id,
@@ -525,7 +425,6 @@ def conformance_check(request, parcel_id):
 # ============================================================
 
 def save_structures(parcel, data, files):
-    """Create, update and remove the structures submitted by the mobile form."""
     raw_value = data.get("structures_json", "[]")
     try:
         structures_data = json.loads(raw_value)
@@ -591,7 +490,6 @@ def saved_layers(request):
         } for layer in layers]
         return JsonResponse({"layers": data})
 
-    # POST: save a new layer
     try:
         body = json.loads(request.body)
         name = body.get("name", "Untitled")
@@ -636,6 +534,5 @@ def admin_parcel_viewer(request):
 
 @login_required(login_url="request_otp")
 def parcel_detail_view(request, parcel_id):
-    """Display parcel details with GPS navigation."""
     parcel = get_object_or_404(Parcel, parcel_id=parcel_id)
     return render(request, 'LAND_USE_PARCELS/parcel_detail.html', {'parcel': parcel})
