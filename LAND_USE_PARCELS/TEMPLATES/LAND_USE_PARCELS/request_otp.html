@@ -1,9 +1,8 @@
-{% comment %} <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Sign In - Land Use App</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -28,7 +27,6 @@
             overflow: hidden;
         }
 
-        /* Animated background with land use pattern */
         body::before {
             content: '';
             position: fixed;
@@ -38,10 +36,8 @@
             bottom: 0;
             z-index: 0;
             background:
-                /* Grid pattern */
                 linear-gradient(rgba(102, 126, 234, 0.08) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(102, 126, 234, 0.08) 1px, transparent 1px),
-                /* Land use color blocks */
                 repeating-linear-gradient(45deg,
                     rgba(76, 175, 80, 0.12) 0px,
                     rgba(76, 175, 80, 0.12) 20px,
@@ -52,7 +48,6 @@
                     rgba(156, 39, 176, 0.12) 60px,
                     rgba(156, 39, 176, 0.12) 80px
                 ),
-                /* Dark overlay */
                 radial-gradient(ellipse at center, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
             background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%;
             background-blend-mode: overlay;
@@ -64,7 +59,6 @@
             50% { opacity: 0.7; }
         }
 
-        /* Floating icons */
         .floating-icons {
             position: fixed;
             top: 0;
@@ -137,11 +131,6 @@
             font-size: 36px;
             margin-bottom: 16px;
             box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
-            transition: transform 0.3s;
-        }
-
-        .logo-icon:hover {
-            transform: scale(1.05) rotate(-5deg);
         }
 
         .logo h1 {
@@ -232,10 +221,6 @@
             box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
         }
 
-        .form-group input:focus + .input-icon {
-            color: #667eea;
-        }
-
         .form-group input::placeholder {
             color: #94a3b8;
         }
@@ -321,13 +306,7 @@
             border-radius: 12px;
             font-size: 14px;
             display: none;
-            animation: fadeSlide 0.4s ease-out;
             font-weight: 500;
-        }
-
-        @keyframes fadeSlide {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .message.success {
@@ -339,10 +318,6 @@
             border: 1px solid #c6f6d5;
         }
 
-        .message.success .icon {
-            font-size: 20px;
-        }
-
         .message.error {
             display: flex;
             align-items: center;
@@ -350,10 +325,6 @@
             background: #fff5f5;
             color: #9b2c2c;
             border: 1px solid #fed7d7;
-        }
-
-        .message.error .icon {
-            font-size: 20px;
         }
 
         .message.info {
@@ -365,7 +336,7 @@
             border: 1px solid #bee3f8;
         }
 
-        .message.info .icon {
+        .message .icon {
             font-size: 20px;
         }
 
@@ -390,13 +361,6 @@
             color: #667eea;
             min-width: 30px;
             display: inline-block;
-        }
-
-        .otp-timer .progress-ring {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 8px;
-            display: block;
         }
 
         .resend-btn {
@@ -445,23 +409,6 @@
         .footer a:hover {
             color: #5a6fd6;
             text-decoration: underline;
-        }
-
-        .footer .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin-bottom: 12px;
-        }
-
-        .footer .social-links a {
-            font-size: 20px;
-            color: #94a3b8;
-            transition: color 0.3s;
-        }
-
-        .footer .social-links a:hover {
-            color: #667eea;
         }
 
         .secure-badge {
@@ -652,29 +599,6 @@
             <div id="message" class="message"></div>
 
             <div id="otpTimer" class="otp-timer">
-                <svg class="progress-ring" viewBox="0 0 60 60">
-                    <circle
-                        cx="30"
-                        cy="30"
-                        r="26"
-                        fill="none"
-                        stroke="#e2e8f0"
-                        stroke-width="4"
-                    />
-                    <circle
-                        id="timerCircle"
-                        cx="30"
-                        cy="30"
-                        r="26"
-                        fill="none"
-                        stroke="#667eea"
-                        stroke-width="4"
-                        stroke-dasharray="163.36"
-                        stroke-dashoffset="0"
-                        stroke-linecap="round"
-                        transform="rotate(-90 30 30)"
-                    />
-                </svg>
                 <div>
                     <span>Resend available in </span>
                     <span class="timer-number" id="timerCountdown">60</span>
@@ -692,11 +616,6 @@
         </form>
 
         <div class="footer">
-            <div class="social-links">
-                <a href="#" title="Twitter">🐦</a>
-                <a href="#" title="GitHub">🐙</a>
-                <a href="#" title="LinkedIn">💼</a>
-            </div>
             Need help? <a href="mailto:support@landuse.com">Contact Support</a>
             <br>
             <span style="font-size: 12px; color: #94a3b8;">&copy; 2026 LandUse App. All rights reserved.</span>
@@ -707,12 +626,12 @@
     JAVASCRIPT
     ============================================================ -->
     <script>
-        (function() {
-            'use strict';
+        // ============================================================
+        // ALL JAVASCRIPT WRAPPED IN DOMContentLoaded
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
 
-            // ============================================================
-            // DOM REFS
-            // ============================================================
+            // Get elements
             var form = document.getElementById('otpForm');
             var emailInput = document.getElementById('email');
             var submitBtn = document.getElementById('submitBtn');
@@ -720,17 +639,17 @@
             var otpTimerDiv = document.getElementById('otpTimer');
             var timerCountdown = document.getElementById('timerCountdown');
             var resendBtn = document.getElementById('resendBtn');
-            var timerCircle = document.getElementById('timerCircle');
 
-            if (!form) return;
+            // Exit if form doesn't exist
+            if (!form) {
+                console.error('Form not found!');
+                return;
+            }
 
             var countdownInterval = null;
             var isSubmitting = false;
-            var timerRemaining = 0;
 
-            // ============================================================
-            // CSRF TOKEN
-            // ============================================================
+            // Get CSRF token
             function getCSRFToken() {
                 var name = 'csrftoken=';
                 var cookies = document.cookie.split(';');
@@ -743,70 +662,52 @@
                 return '';
             }
 
-            // ============================================================
-            // VALIDATION
-            // ============================================================
+            // Validate email
             function isValidEmail(email) {
                 return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
             }
 
-            // ============================================================
-            // MESSAGES
-            // ============================================================
+            // Show message
             function showMessage(text, type) {
                 if (!messageDiv) return;
-                var icons = {
-                    success: '✅',
-                    error: '❌',
-                    info: 'ℹ️'
-                };
+                var icons = { success: '✅', error: '❌', info: 'ℹ️' };
                 messageDiv.innerHTML = '<span class="icon">' + (icons[type] || 'ℹ️') + '</span> ' + text;
                 messageDiv.className = 'message ' + (type || 'info');
                 messageDiv.style.display = 'flex';
             }
 
+            // Hide message
             function hideMessage() {
                 if (!messageDiv) return;
                 messageDiv.style.display = 'none';
             }
 
-            // ============================================================
-            // TIMER
-            // ============================================================
+            // Start countdown timer
             function startCountdown(seconds) {
-                timerRemaining = seconds;
-                if (!otpTimerDiv || !timerCountdown || !resendBtn || !timerCircle) return;
+                if (!otpTimerDiv || !timerCountdown || !resendBtn) return;
 
+                var remaining = seconds;
                 otpTimerDiv.style.display = 'block';
-                timerCountdown.textContent = seconds;
+                timerCountdown.textContent = remaining;
                 resendBtn.disabled = true;
-
-                var circumference = 2 * Math.PI * 26; // ~163.36
 
                 if (countdownInterval) {
                     clearInterval(countdownInterval);
                 }
 
                 countdownInterval = setInterval(function() {
-                    timerRemaining--;
-                    timerCountdown.textContent = timerRemaining;
+                    remaining--;
+                    timerCountdown.textContent = remaining;
 
-                    // Update progress circle
-                    var offset = circumference - (timerRemaining / seconds) * circumference;
-                    timerCircle.style.strokeDashoffset = offset;
-
-                    if (timerRemaining <= 0) {
+                    if (remaining <= 0) {
                         clearInterval(countdownInterval);
                         resendBtn.disabled = false;
                         timerCountdown.textContent = '0';
-                        timerCircle.style.strokeDashoffset = 0;
                     }
                 }, 1000);
             }
 
-            // ============================================================
-            // FORM SUBMIT
-            // ============================================================
+            // Form submit
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
 
@@ -881,9 +782,7 @@
                 });
             });
 
-            // ============================================================
-            // RESEND
-            // ============================================================
+            // Resend button
             if (resendBtn) {
                 resendBtn.addEventListener('click', function() {
                     if (!resendBtn.disabled) {
@@ -892,9 +791,7 @@
                 });
             }
 
-            // ============================================================
-            // ENTER KEY SUPPORT
-            // ============================================================
+            // Enter key support
             if (emailInput) {
                 emailInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter') {
@@ -904,229 +801,23 @@
                 });
             }
 
-            // ============================================================
-            // AUTO FOCUS
-            // ============================================================
+            // Auto focus
             if (emailInput) {
                 setTimeout(function() {
                     emailInput.focus();
-                }, 100);
+                }, 200);
             }
 
-            // ============================================================
-            // CHECK FOR NEXT URL PARAM
-            // ============================================================
+            // Check for next URL parameter
             var urlParams = new URLSearchParams(window.location.search);
             var nextUrl = urlParams.get('next');
             if (nextUrl) {
                 showMessage('Please sign in to continue.', 'info');
             }
 
-        })();
-    </script>
-
-</body>
-</html> {% endcomment %}
-
-
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In - Land Use App</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            max-width: 400px;
-            width: 100%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-        h1 {
-            text-align: center;
-            color: #2d3748;
-            margin-bottom: 8px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #718096;
-            margin-bottom: 24px;
-        }
-        .form-group {
-            margin-bottom: 16px;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        input:focus {
-            border-color: #667eea;
-            outline: none;
-        }
-        button {
-            width: 100%;
-            padding: 14px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        button:hover {
-            background: #5a6fd6;
-        }
-        .message {
-            margin-top: 12px;
-            padding: 12px;
-            border-radius: 8px;
-            display: none;
-            font-weight: 500;
-        }
-        .message.success {
-            display: block;
-            background: #d4edda;
-            color: #155724;
-        }
-        .message.error {
-            display: block;
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            color: #718096;
-            font-size: 14px;
-        }
-        .footer a {
-            color: #667eea;
-            text-decoration: none;
-        }
-        .footer a:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1>🌍 LandUse</h1>
-    <p class="subtitle">Smart Land Management & Planning</p>
-
-    <form id="otpForm" method="post">
-        {% csrf_token %}
-        <div class="form-group">
-            <input type="email" id="email" name="email" placeholder="Enter your email address" required autofocus>
-        </div>
-        <button type="submit" id="submitBtn">Send One-Time Password</button>
-        <div id="message" class="message"></div>
-    </form>
-
-    <div class="footer">
-        Need help? <a href="mailto:support@landuse.com">Contact Support</a>
-    </div>
-</div>
-
-<script>
-// Simple JavaScript - no errors guaranteed!
-(function() {
-    // Get elements
-    var form = document.getElementById('otpForm');
-    var email = document.getElementById('email');
-    var btn = document.getElementById('submitBtn');
-    var msg = document.getElementById('message');
-
-    // Only proceed if form exists
-    if (!form) return;
-
-    // Get CSRF token
-    function getCsrf() {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var c = cookies[i].trim();
-            if (c.indexOf('csrftoken=') === 0) {
-                return c.substring('csrftoken='.length, c.length);
-            }
-        }
-        return '';
-    }
-
-    // Form submit
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        var val = email ? email.value.trim() : '';
-        if (!val) {
-            msg.textContent = 'Please enter your email address.';
-            msg.className = 'message error';
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Sending...';
-        msg.style.display = 'none';
-
-        var data = new FormData(form);
-        var token = getCsrf();
-
-        fetch('/request-otp/', {
-            method: 'POST',
-            body: data,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': token
-            },
-            credentials: 'same-origin'
-        })
-        .then(function(res) {
-            return res.json();
-        })
-        .then(function(data) {
-            btn.disabled = false;
-            btn.textContent = 'Send One-Time Password';
-
-            if (data.success) {
-                msg.textContent = '✅ OTP sent! Check your email.';
-                msg.className = 'message success';
-                if (data.redirect_url) {
-                    setTimeout(function() {
-                        window.location.href = data.redirect_url;
-                    }, 2000);
-                }
-            } else {
-                msg.textContent = '❌ ' + (data.error || 'Failed to send OTP.');
-                msg.className = 'message error';
-            }
-        })
-        .catch(function(err) {
-            btn.disabled = false;
-            btn.textContent = 'Send One-Time Password';
-            msg.textContent = '❌ Network error. Please try again.';
-            msg.className = 'message error';
-            console.log('Error:', err);
+            console.log('OTP page loaded successfully!');
         });
-    });
-
-})();
-</script>
+    </script>
 
 </body>
 </html>
