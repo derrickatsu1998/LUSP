@@ -10,7 +10,9 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods
+from django.contrib.admin.views.decorators import staff_member_required
 
+# Import models from the same app
 from .models import OTPCode, Parcel, SavedParcelLayer, Structure
 
 # ============================================================
@@ -90,49 +92,26 @@ def structure_payload(structure):
 
 @ensure_csrf_cookie
 @require_http_methods(["GET", "POST"])
-from django.shortcuts import render, redirect
-from django.contrib.auth import get_user_model
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
-from django.conf import settings
-from django.http import JsonResponse
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.http import require_http_methods
-
-from .models import OTPCode
-
-User = get_user_model()
-
-
-@ensure_csrf_cookie
-@require_http_methods(["GET", "POST"])
 def request_otp_view(request):
     """
     Request a six-digit OTP using an email address.
     Supports both regular form submission and AJAX requests.
     """
     
-    # --------------------------------------------------------
     # GET - Return the HTML page
-    # --------------------------------------------------------
     if request.method == "GET":
         return render(
             request,
             "LAND_USE_PARCELS/request_otp.html",
         )
 
-    # --------------------------------------------------------
     # POST - Handle AJAX or regular form submission
-    # --------------------------------------------------------
     email = request.POST.get("email", "").strip().lower()
     
     # Check if this is an AJAX request
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
-    # --------------------------------------------------------
-    # VALIDATE EMAIL
-    # --------------------------------------------------------
+    # Validate email
     if not email:
         if is_ajax:
             return JsonResponse({'success': False, 'error': 'Please enter your email address.'})
@@ -145,9 +124,7 @@ def request_otp_view(request):
             return JsonResponse({'success': False, 'error': 'Please enter a valid email address.'})
         return render(request, "LAND_USE_PARCELS/request_otp.html", {"error": "Please enter a valid email address."})
 
-    # --------------------------------------------------------
-    # FIND OR CREATE USER
-    # --------------------------------------------------------
+    # Find or create user
     user = User.objects.filter(email__iexact=email).first()
     if user is None:
         user = User.objects.create_user(username=email, email=email)
@@ -156,20 +133,14 @@ def request_otp_view(request):
         user.is_active = True
         user.save(update_fields=["is_active"])
 
-    # --------------------------------------------------------
-    # INVALIDATE OLD OTPs
-    # --------------------------------------------------------
+    # Invalidate old OTPs
     OTPCode.objects.filter(user=user, is_used=False).update(is_used=True)
 
-    # --------------------------------------------------------
-    # GENERATE NEW OTP
-    # --------------------------------------------------------
+    # Generate new OTP
     code = OTPCode.generate_otp()
     otp = OTPCode.objects.create(user=user, code=code)
 
-    # --------------------------------------------------------
-    # SEND EMAIL
-    # --------------------------------------------------------
+    # Send email
     try:
         send_mail(
             subject="Land Use Survey System - Verification Code",
@@ -185,15 +156,11 @@ def request_otp_view(request):
             return JsonResponse({'success': False, 'error': error_msg})
         return render(request, "LAND_USE_PARCELS/request_otp.html", {"error": error_msg})
 
-    # --------------------------------------------------------
-    # STORE EMAIL IN SESSION
-    # --------------------------------------------------------
+    # Store email in session
     request.session["otp_email"] = email
     request.session.modified = True
 
-    # --------------------------------------------------------
-    # RETURN RESPONSE
-    # --------------------------------------------------------
+    # Return response
     if is_ajax:
         return JsonResponse({
             'success': True,
@@ -203,6 +170,7 @@ def request_otp_view(request):
     
     # Regular form submission – redirect to verify page
     return redirect("verify_otp")
+
 # ============================================================
 # VERIFY OTP
 # ============================================================
@@ -657,14 +625,17 @@ def delete_saved_layer(request, layer_id):
 # ADMIN PARCEL VIEWER
 # ============================================================
 
-from django.contrib.admin.views.decorators import staff_member_required
-
 @staff_member_required
 def admin_parcel_viewer(request):
     parcels = Parcel.objects.all().order_by('parcel_id')
     return render(request, 'admin/parcel_viewer.html', {'parcels': parcels})
 
+# ============================================================
+# PARCEL DETAIL VIEW (for GPS navigation)
+# ============================================================
 
-
-
-    
+@login_required(login_url="request_otp")
+def parcel_detail_view(request, parcel_id):
+    """Display parcel details with GPS navigation."""
+    parcel = get_object_or_404(Parcel, parcel_id=parcel_id)
+    return render(request, 'LAND_USE_PARCELS/parcel_detail.html', {'parcel': parcel})
