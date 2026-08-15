@@ -132,7 +132,10 @@ LOGOUT_REDIRECT_URL = "/request-otp/"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [
+            BASE_DIR / "templates",
+            BASE_DIR / "LAND_USE_PARCELS" / "TEMPLATES",  # Add this line
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -143,7 +146,6 @@ TEMPLATES = [
         },
     },
 ]
-
 # ============================================================
 # WSGI
 # ============================================================
