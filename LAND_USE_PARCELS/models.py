@@ -89,6 +89,10 @@ class OTPCode(models.Model):
 class Parcel(models.Model):
     """Land parcel with field survey data."""
 
+
+    # Add explicit ID field
+    id = models.AutoField(primary_key=True)
+
     # Land use choices
     LAND_USE_CHOICES = [
         ("AGRICULTURE", "Agriculture"),
