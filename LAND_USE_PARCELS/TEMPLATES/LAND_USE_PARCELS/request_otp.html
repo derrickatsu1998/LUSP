@@ -353,27 +353,24 @@
         </div>
     </div>
 
-    <!-- ============================================================
-    JAVASCRIPT - Placed at the bottom for reliability
-    ============================================================ -->
     <script>
-    (function() {
-        'use strict';
+    // ============================================================
+    // ALL JAVASCRIPT - No DOMContentLoaded needed
+    // ============================================================
 
-        // Get elements - they exist because HTML is above
-        var form = document.getElementById('otpForm');
-        var emailInput = document.getElementById('email');
-        var submitBtn = document.getElementById('submitBtn');
-        var messageDiv = document.getElementById('message');
-        var otpTimerDiv = document.getElementById('otpTimer');
-        var timerCountdown = document.getElementById('timerCountdown');
-        var resendBtn = document.getElementById('resendBtn');
+    // Get elements
+    var form = document.getElementById('otpForm');
+    var emailInput = document.getElementById('email');
+    var submitBtn = document.getElementById('submitBtn');
+    var messageDiv = document.getElementById('message');
+    var otpTimerDiv = document.getElementById('otpTimer');
+    var timerCountdown = document.getElementById('timerCountdown');
+    var resendBtn = document.getElementById('resendBtn');
 
-        // Safety check
-        if (!form) {
-            console.error('Form not found!');
-            return;
-        }
+    // SAFETY CHECK - Exit if form doesn't exist
+    if (!form) {
+        console.error('Form not found!');
+    } else {
 
         var countdownInterval = null;
         var isSubmitting = false;
@@ -538,7 +535,7 @@
             showMessage('Please sign in to continue.', 'info');
         }
 
-    })();
+    } // end if form exists
     </script>
 
 </body>
