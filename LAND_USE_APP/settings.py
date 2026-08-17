@@ -1,5 +1,3 @@
-
-
 from pathlib import Path
 import os
 from decouple import Csv, config
@@ -33,12 +31,6 @@ if os.name != 'nt':  # Linux environment
         except Exception as e2:
             print(f"Fallback also failed: {e2}")
 
-
-
-
-
-
-
 # ============================================================
 # BASE DIRECTORY
 # ============================================================
@@ -69,9 +61,6 @@ else:  # Linux (Render)
 # ============================================================
 # SECURITY
 # ============================================================
-# ============================================================
-# SECURITY
-# ============================================================
 
 SECRET_KEY = config("DJANGO_SECRET_KEY", default="django-insecure-change-this-key")
 DEBUG = config("DEBUG", default=True, cast=bool)
@@ -98,8 +87,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",          # GeoDjango
     "anymail",                     # Email
-    "LAND_USE_PARCELS",  
-    "session_security",          # Your app
+    "LAND_USE_PARCELS",            # Your app
+    "session_security",            # Session security
 ]
 
 # ============================================================
@@ -115,7 +104,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "session_security.middleware.SessionSecurityMiddleware", 
+    "session_security.middleware.SessionSecurityMiddleware",  # Session security
 ]
 
 # ============================================================
@@ -148,52 +137,12 @@ TEMPLATES = [
         },
     },
 ]
+
 # ============================================================
 # WSGI
 # ============================================================
 
 WSGI_APPLICATION = "LAND_USE_APP.wsgi.application"
-
-# ============================================================
-# DATABASE – uses DATABASE_URL environment variable on Render
-# ============================================================
-
-# Default to local PostGIS settings if DATABASE_URL not set
-default_db = {
-    "ENGINE": "django.contrib.gis.db.backends.postgis",
-    "NAME": "landuse",
-    "USER": "postgres",
-    "PASSWORD": config("DB_PASSWORD", default=""),
-    "HOST": "localhost",
-    "PORT": "5432",
-}
-
-import os
-import dj_database_url
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-#         'NAME': os.environ.get('DB_NAME', 'landuse'),
-#         'USER': os.environ.get('DB_USER', 'postgres'),
-#         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-#         'HOST': os.environ.get('DB_HOST', 'localhost'),
-#         'PORT': os.environ.get('DB_PORT', '5432'),
-#     }
-# }
-
-# # Or use DATABASE_URL (recommended)
-# DATABASE_URL = os.environ.get('DATABASE_URL')
-# if DATABASE_URL:
-#     DATABASES['default'] = dj_database_url.config(
-#         default=DATABASE_URL,
-#         conn_max_age=600,
-#         ssl_require=True
-#     )
-
-
-
-import sys
 
 # ============================================================
 # DATABASE – uses DATABASE_URL environment variable on Render
@@ -227,7 +176,6 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-
 
 # ============================================================
 # PASSWORD VALIDATION
@@ -278,13 +226,11 @@ ANYMAIL = {
 }
 DEFAULT_FROM_EMAIL = f"postmaster@{config('MAILGUN_DOMAIN', default='example.com')}"
 
+# ============================================================
+# SESSION SECURITY
+# ============================================================
 
-
-# Session Security Settings
+# Required for django-session-security
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SECURITY_WARN_AFTER = 840   # 14 minutes (warn user)
 SESSION_SECURITY_EXPIRE_AFTER = 900  # 15 minutes (auto logout)
-SESSION_SECURITY_PASSIVE_URLS = [
-    r'^/admin/',
-    r'^/static/',
-    r'^/media/',
-]
