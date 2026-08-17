@@ -98,7 +98,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",          # GeoDjango
     "anymail",                     # Email
-    "LAND_USE_PARCELS",            # Your app
+    "LAND_USE_PARCELS",  
+    "session_security",          # Your app
 ]
 
 # ============================================================
@@ -114,6 +115,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "session_security.middleware.SessionSecurityMiddleware", 
 ]
 
 # ============================================================
@@ -275,3 +277,14 @@ ANYMAIL = {
     "MAILGUN_SENDER_DOMAIN": config("MAILGUN_DOMAIN", default=""),
 }
 DEFAULT_FROM_EMAIL = f"postmaster@{config('MAILGUN_DOMAIN', default='example.com')}"
+
+
+
+# Session Security Settings
+SESSION_SECURITY_WARN_AFTER = 840   # 14 minutes (warn user)
+SESSION_SECURITY_EXPIRE_AFTER = 900  # 15 minutes (auto logout)
+SESSION_SECURITY_PASSIVE_URLS = [
+    r'^/admin/',
+    r'^/static/',
+    r'^/media/',
+]

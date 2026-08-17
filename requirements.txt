@@ -5,6 +5,7 @@ dj-database-url==2.1.0
 Django==5.0.6
 django-anymail==15.1
 django-leaflet==0.29.0
+django-session-security==2.6.8
 gunicorn==22.0.0
 idna==3.18
 packaging==26.2
