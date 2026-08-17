@@ -303,8 +303,9 @@
             <span class="badge">🔐 Secure Access</span>
         </div>
 
-        <form id="otpForm" method="post" action="{% url 'request_otp' %}">
-                {% csrf_token %}
+        <form id="otpForm" method="post" action="{% url 'request_otp' %}" novalidate>
+            {% csrf_token %}
+
             <div class="form-group">
                 <label for="email">Email Address <span class="required">*</span></label>
                 <div class="input-wrapper">
@@ -352,13 +353,11 @@
         </div>
     </div>
 
-    <!-- #################################################### -->
-    <!-- SCRIPT AT THE BOTTOM - NO DOMContentLoaded NEEDED     -->
-    <!-- #################################################### -->
+    <!-- ============================================================ -->
+    <!-- JAVASCRIPT - Simple and safe -->
+    <!-- ============================================================ -->
     <script>
-    // ============================================================
-    // SIMPLE JAVASCRIPT
-    // ============================================================
+    // Get elements (they exist because the script is at the bottom)
     var form = document.getElementById('otpForm');
     var emailInput = document.getElementById('email');
     var submitBtn = document.getElementById('submitBtn');
@@ -367,11 +366,8 @@
     var timerCountdown = document.getElementById('timerCountdown');
     var resendBtn = document.getElementById('resendBtn');
 
-    // If form doesn't exist, log and stop
-    if (!form) {
-        console.error('OTP form not found! Check the HTML.');
-    } else {
-        // All code goes here
+    // Only run if the form exists
+    if (form) {
         var countdownInterval = null;
         var isSubmitting = false;
 
@@ -534,6 +530,11 @@
         if (nextUrl) {
             showMessage('Please sign in to continue.', 'info');
         }
+
+        console.log('OTP form initialized successfully!');
+
+    } else {
+        console.error('Form with id "otpForm" not found!');
     }
     </script>
 
