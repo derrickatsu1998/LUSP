@@ -303,9 +303,8 @@
             <span class="badge">🔐 Secure Access</span>
         </div>
 
-        <form id="otpForm" method="post" novalidate>
-            {% csrf_token %}
-
+        <form id="otpForm" method="post" action="{% url 'request_otp' %}">
+                {% csrf_token %}
             <div class="form-group">
                 <label for="email">Email Address <span class="required">*</span></label>
                 <div class="input-wrapper">
