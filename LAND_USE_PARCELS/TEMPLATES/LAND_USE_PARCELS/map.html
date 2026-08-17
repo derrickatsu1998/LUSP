@@ -479,6 +479,189 @@
         .was-validated .form-control:valid, .was-validated .form-select:valid { border-color:#198754; }
         .invalid-feedback { display:none; width:100%; margin-top:0.25rem; font-size:0.875em; color:#dc3545; }
         .was-validated .form-control:invalid ~ .invalid-feedback, .was-validated .form-select:invalid ~ .invalid-feedback { display:block; }
+
+                    /* ============================================================
+            GPS FLOATING BUTTON ENHANCEMENTS
+            ============================================================ */
+            #gpsFloatingBtn:hover {
+                transform: scale(1.1);
+                box-shadow: 0 6px 30px rgba(37, 99, 235, 0.5);
+            }
+
+            #gpsFloatingBtn.gps-searching {
+                background: #f59e0b !important;
+                border-color: #f59e0b !important;
+                animation: gpsPulse 1s ease-in-out infinite;
+            }
+
+            #gpsFloatingBtn.gps-active {
+                background: #22c55e !important;
+                border-color: #22c55e !important;
+            }
+
+            #gpsFloatingBtn.gps-error {
+                background: #ef4444 !important;
+                border-color: #ef4444 !important;
+            }
+
+            @keyframes gpsPulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.15); }
+            }
+/* ============================================================
+   GPS FLOATING BUTTON ENHANCEMENTS
+   ============================================================ */
+#gpsFloatingBtn {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#gpsFloatingBtn.gps-searching {
+    background: linear-gradient(145deg, #f59e0b, #d97706) !important;
+    border-color: #f59e0b !important;
+    animation: gpsPulse 1s ease-in-out infinite;
+    box-shadow: 0 6px 30px rgba(245, 158, 11, 0.5), 0 0 40px rgba(245, 158, 11, 0.2) !important;
+}
+
+#gpsFloatingBtn.gps-active {
+    background: linear-gradient(145deg, #22c55e, #16a34a) !important;
+    border-color: #22c55e !important;
+    box-shadow: 0 6px 30px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.2) !important;
+    animation: gpsSuccess 0.5s ease-out;
+}
+
+#gpsFloatingBtn.gps-error {
+    background: linear-gradient(145deg, #ef4444, #dc2626) !important;
+    border-color: #ef4444 !important;
+    animation: gpsError 0.5s ease-out;
+}
+
+@keyframes gpsPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 6px 30px rgba(245, 158, 11, 0.5); }
+    50% { transform: scale(1.1); box-shadow: 0 6px 50px rgba(245, 158, 11, 0.7), 0 0 60px rgba(245, 158, 11, 0.3); }
+}
+
+@keyframes gpsSuccess {
+    0% { transform: scale(1.3); }
+    50% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}
+
+@keyframes gpsError {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+/* GPS Status Badge animations */
+#gpsStatusBadge.gps-badge-searching {
+    display: block !important;
+    color: #f59e0b !important;
+    border-color: rgba(245, 158, 11, 0.3) !important;
+    animation: badgePulse 1s ease-in-out infinite;
+}
+
+#gpsStatusBadge.gps-badge-active {
+    display: block !important;
+    color: #22c55e !important;
+    border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+#gpsStatusBadge.gps-badge-error {
+    display: block !important;
+    color: #ef4444 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+@keyframes badgePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ============================================================
+   USER LOCATION MARKER ENHANCEMENTS
+   ============================================================ */
+.user-location-marker {
+    position: relative;
+}
+
+.user-location-marker .marker-dot {
+    width: 20px;
+    height: 20px;
+    background: #2563eb;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.25);
+    transition: all 0.3s;
+}
+
+.user-location-marker .marker-pulse {
+    position: absolute;
+    top: -12px;
+    left: -12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.15);
+    animation: markerPulse 2s ease-out infinite;
+    pointer-events: none;
+}
+
+.user-location-marker .marker-pulse:nth-child(2) {
+    animation-delay: 0.5s;
+}
+
+@keyframes markerPulse {
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* Accuracy circle styling */
+.gps-accuracy-circle {
+    stroke-dasharray: 4 4;
+    animation: rotateDash 3s linear infinite;
+}
+
+@keyframes rotateDash {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 8; }
+}
+
+/* GPS coordinate display in map */
+.gps-coord-display {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 900;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    color: white;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.6rem;
+    font-family: 'Courier New', monospace;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: none;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+}
+
+.gps-coord-display.active {
+    display: block;
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+            #map {
+                height: calc(100vh - 56px);
+                width: 100%;
+                position: relative;
+                background: #e5e9f0;
+            }
     </style>
 </head>
 <body>
@@ -488,7 +671,6 @@
     ============================================================ -->
     <nav class="navbar-custom">
         <span class="brand"><i class="bi bi-map-fill"></i> GSSM_LUSP</span>
-        {% comment %} <span class="badge-status" id="selectedParcelBadge">No parcel</span> {% endcomment %}
         <div class="navbar-right">
             <span class="badge-gps" id="gpsStatus" style="display:none;"><i class="bi bi-satellite-fill"></i> GPS</span>
             <button class="menu-btn" id="gpsToggle" title="Toggle GPS Tracking"><i class="bi bi-satellite"></i></button>
@@ -499,37 +681,67 @@
         </div>
     </nav>
 
-    <!-- ============================================================
-    MAP
-    ============================================================ -->
-    <div id="map"></div>
-
-    <!-- 
+   <!-- ============================================================
+     MAP CONTAINER WITH GPS OVERLAY
+     ============================================================ -->
+<div id="mapContainer" style="position:relative; height:calc(100vh - 56px); width:100%; overflow:hidden;">
     
+    <!-- MAP -->
+    <div id="map" style="height:100%; width:100%; background:#e5e9f0;"></div>
     
-    <!-- GPS FLOATING BUTTON - BIG AND VISIBLE -->
-<button id="gpsFloatingBtn" style="
-    position: absolute;
-    bottom: 130px;
-    right: 12px;
-    z-index: 999;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: #0f172a;
-    color: white;
-    border: 3px solid #2563eb;
-    font-size: 28px;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-">
-    📡
-</button>
+    <!-- GPS FLOATING BUTTON - BIG & VISIBLE -->
+    <button id="gpsFloatingBtn" 
+            onclick="toggleGPS()" 
+            title="Click to get your GPS location (or press G)"
+            style="
+                position: absolute;
+                bottom: 130px;
+                right: 16px;
+                z-index: 9999;
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                background: linear-gradient(145deg, #0f172a, #1a2a4a);
+                color: white;
+                border: 3px solid #3b82f6;
+                font-size: 30px;
+                cursor: pointer;
+                box-shadow: 0 6px 30px rgba(0,0,0,0.5), 0 0 0 0 rgba(59,130,246,0);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                user-select: none;
+                backdrop-filter: blur(4px);
+                background: rgba(15, 23, 42, 0.95);
+            "
+            onmouseenter="this.style.transform='scale(1.12)'; this.style.boxShadow='0 8px 40px rgba(0,0,0,0.6), 0 0 30px rgba(59,130,246,0.2)';"
+            onmouseleave="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 30px rgba(0,0,0,0.5)';">
+        📡
+    </button>
     
+    <!-- GPS STATUS INDICATOR (small badge near button) -->
+    <div id="gpsStatusBadge" style="
+        position: absolute;
+        bottom: 200px;
+        right: 20px;
+        z-index: 9998;
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(8px);
+        color: #94a3b8;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 0.6rem;
+        font-family: 'Courier New', monospace;
+        border: 1px solid rgba(255,255,255,0.1);
+        display: none;
+        letter-spacing: 0.5px;
+        transition: all 0.3s;
+        pointer-events: none;
+    ">
+        📡 GPS: OFF
+    </div>
+</div>
     
     ============================================================
     GPS NAVIGATION INTERFACE
@@ -4325,197 +4537,273 @@
         });
 
         // ============================================================
-        // GPS FLOATING BUTTON - SIMPLE AND WORKING
-        // ============================================================
-        document.addEventListener('DOMContentLoaded', function() {
-            const gpsBtn = document.getElementById('gpsFloatingBtn');
-            const gpsPanel = document.getElementById('gpsNavContainer');
+// ENHANCED GPS TOGGLE - FULL FEATURED
+// ============================================================
+let gpsWatchId = null;
+let gpsLocation = null;
+let gpsMarker = null;
+let gpsCircle = null;
+let gpsPulse = null;
+
+function toggleGPS() {
+    const btn = document.getElementById('gpsFloatingBtn');
+    const badge = document.getElementById('gpsStatusBadge');
+    const coordDisplay = document.getElementById('gpsCoordDisplay');
+    
+    if (!btn) {
+        console.error('GPS button not found');
+        return;
+    }
+    
+    // If GPS is already active, stop it
+    if (gpsWatchId) {
+        stopGPS(btn, badge);
+        return;
+    }
+    
+    if (!navigator.geolocation) {
+        showToast('GPS not supported on this device.', 'danger');
+        return;
+    }
+    
+    // Start GPS - set searching state
+    btn.textContent = '⏳';
+    btn.className = 'gps-searching';
+    badge.textContent = '🔍 GPS: Searching...';
+    badge.className = 'gps-badge-searching';
+    badge.style.display = 'block';
+    
+    // Clear existing location layers
+    clearLocationLayers();
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            // Got initial position - start watching
+            gpsWatchId = navigator.geolocation.watchPosition(
+                function(pos) {
+                    updateGPSPosition(pos, btn, badge, coordDisplay);
+                },
+                function(error) {
+                    handleGPSError(error, btn, badge);
+                },
+                { 
+                    enableHighAccuracy: true, 
+                    maximumAge: 5000,
+                    timeout: 15000
+                }
+            );
             
-            if (gpsBtn && gpsPanel) {
-                gpsBtn.addEventListener('click', function() {
-                    if (gpsPanel.style.display === 'none' || gpsPanel.style.display === '') {
-                        gpsPanel.style.display = 'block';
-                        gpsBtn.textContent = '📍';
-                        gpsBtn.style.background = '#2563eb';
-                        gpsBtn.style.borderColor = '#ffffff';
-                    } else {
-                        gpsPanel.style.display = 'none';
-                        gpsBtn.textContent = '📡';
-                        gpsBtn.style.background = '#0f172a';
-                        gpsBtn.style.borderColor = '#2563eb';
-                    }
-                });
-            }
+            // Update with initial position
+            updateGPSPosition(position, btn, badge, coordDisplay);
+            showToast('📍 GPS tracking started!', 'success');
+        },
+        function(error) {
+            handleGPSError(error, btn, badge);
+        },
+        { 
+            enableHighAccuracy: true, 
+            timeout: 10000
+        }
+    );
+}
 
-            // GPS Start/Stop functions
-            const startBtn = document.getElementById('gpsStartBtn');
-            const stopBtn = document.getElementById('gpsStopBtn');
-            const gpsDot = document.getElementById('gpsDot');
-            const gpsStatusText = document.getElementById('gpsStatusText');
-            const navDistance = document.getElementById('navDistance');
-            const navDirection = document.getElementById('navDirection');
-            const compassPointer = document.getElementById('compassPointer');
+function updateGPSPosition(position, btn, badge, coordDisplay) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const accuracy = position.coords.accuracy;
+    const altitude = position.coords.altitude;
+    const heading = position.coords.heading;
+    const speed = position.coords.speed;
+    
+    gpsLocation = { lat, lng, accuracy, altitude, heading, speed };
+    
+    // Update button state
+    btn.textContent = '📍';
+    btn.className = 'gps-active';
+    
+    // Update status badge
+    let accuracyText = '';
+    let color = '#22c55e';
+    if (accuracy < 10) {
+        accuracyText = 'Excellent';
+        color = '#22c55e';
+    } else if (accuracy < 30) {
+        accuracyText = 'Good';
+        color = '#22c55e';
+    } else if (accuracy < 100) {
+        accuracyText = 'Fair';
+        color = '#f59e0b';
+        btn.className = 'gps-searching';
+    } else {
+        accuracyText = 'Low';
+        color = '#ef4444';
+        btn.className = 'gps-error';
+    }
+    badge.textContent = `📍 GPS: ${accuracyText} ±${Math.round(accuracy)}m`;
+    badge.className = 'gps-badge-active';
+    badge.style.color = color;
+    badge.style.borderColor = color;
+    
+    // Create or update location marker
+    updateLocationMarker(lat, lng, accuracy);
+    
+    // Update coordinate display
+    if (coordDisplay) {
+        coordDisplay.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} ±${Math.round(accuracy)}m`;
+        coordDisplay.className = 'gps-coord-display active';
+    }
+    
+    // Fly to location (only if not already there)
+    const mapCenter = map.getCenter();
+    const distance = turf.distance(
+        turf.point([lng, lat]),
+        turf.point([mapCenter.lng, mapCenter.lat]),
+        { units: 'kilometers' }
+    );
+    if (distance > 0.5) {
+        map.flyTo([lat, lng], 18, { duration: 1.5 });
+    }
+}
 
-            let watchId = null;
-            let gpsPosition = null;
-            let targetCentroid = null;
-            let targetParcelId = null;
-            let navigateLine = null;
+function stopGPS(btn, badge) {
+    if (gpsWatchId) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+    }
+    
+    gpsLocation = null;
+    clearLocationLayers();
+    
+    btn.textContent = '📡';
+    btn.className = '';
+    btn.style.background = 'rgba(15, 23, 42, 0.95)';
+    btn.style.borderColor = '#3b82f6';
+    
+    if (badge) {
+        badge.textContent = '📡 GPS: OFF';
+        badge.className = '';
+        badge.style.color = '#94a3b8';
+        badge.style.borderColor = 'rgba(255,255,255,0.1)';
+    }
+    
+    const coordDisplay = document.getElementById('gpsCoordDisplay');
+    if (coordDisplay) {
+        coordDisplay.className = 'gps-coord-display';
+    }
+    
+    showToast('GPS stopped', 'info');
+}
 
-            function startGPS() {
-                if (!navigator.geolocation) {
-                    showToast('GPS not supported', 'danger');
-                    return;
-                }
+function handleGPSError(error, btn, badge) {
+    let errorMsg = 'GPS Error';
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            errorMsg = 'Permission denied. Allow location in browser settings.';
+            break;
+        case error.POSITION_UNAVAILABLE:
+            errorMsg = 'Signal unavailable. Try going outside.';
+            break;
+        case error.TIMEOUT:
+            errorMsg = 'GPS timed out. Try again in open area.';
+            break;
+        default:
+            errorMsg = error.message || 'Unknown GPS error';
+    }
+    
+    btn.textContent = '❌';
+    btn.className = 'gps-error';
+    btn.style.borderColor = '#ef4444';
+    
+    if (badge) {
+        badge.textContent = `❌ ${errorMsg}`;
+        badge.className = 'gps-badge-error';
+        badge.style.color = '#ef4444';
+        badge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+    }
+    
+    showToast(`❌ ${errorMsg}`, 'danger');
+    console.error('GPS Error:', error);
+    
+    // Reset button after 3 seconds
+    setTimeout(() => {
+        btn.textContent = '📡';
+        btn.className = '';
+        btn.style.borderColor = '#3b82f6';
+        if (badge) {
+            badge.textContent = '📡 GPS: OFF';
+            badge.className = '';
+            badge.style.color = '#94a3b8';
+        }
+    }, 3000);
+}
 
-                if (gpsDot) gpsDot.style.background = '#f59e0b';
-                if (gpsStatusText) gpsStatusText.textContent = 'Searching...';
-                if (startBtn) {
-                    startBtn.disabled = true;
-                    startBtn.textContent = '⏳';
-                }
+function updateLocationMarker(lat, lng, accuracy) {
+    // Clear existing layers
+    clearLocationLayers();
+    
+    // Create custom icon with pulse effect
+    const icon = L.divIcon({
+        className: 'user-location-marker',
+        html: `
+            <div class="marker-dot"></div>
+            <div class="marker-pulse"></div>
+            <div class="marker-pulse" style="animation-delay: 0.5s;"></div>
+        `,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+    });
+    
+    // Add marker
+    gpsMarker = L.marker([lat, lng], { icon }).addTo(map);
+    
+    // Add accuracy circle
+    gpsCircle = L.circle([lat, lng], {
+        radius: accuracy,
+        color: '#2563eb',
+        fillColor: '#2563eb',
+        fillOpacity: 0.08,
+        weight: 2,
+        opacity: 0.6,
+        className: 'gps-accuracy-circle'
+    }).addTo(map);
+}
 
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        watchId = navigator.geolocation.watchPosition(
-                            function(pos) {
-                                gpsPosition = {
-                                    lat: pos.coords.latitude,
-                                    lng: pos.coords.longitude,
-                                    accuracy: pos.coords.accuracy
-                                };
+function clearLocationLayers() {
+    if (gpsMarker) {
+        map.removeLayer(gpsMarker);
+        gpsMarker = null;
+    }
+    if (gpsCircle) {
+        map.removeLayer(gpsCircle);
+        gpsCircle = null;
+    }
+    if (gpsPulse) {
+        map.removeLayer(gpsPulse);
+        gpsPulse = null;
+    }
+}
 
-                                if (pos.coords.accuracy < 10) {
-                                    if (gpsDot) gpsDot.style.background = '#22c55e';
-                                    if (gpsStatusText) gpsStatusText.textContent = 'GPS: ±' + Math.round(pos.coords.accuracy) + 'm';
-                                } else if (pos.coords.accuracy < 50) {
-                                    if (gpsDot) gpsDot.style.background = '#f59e0b';
-                                    if (gpsStatusText) gpsStatusText.textContent = 'GPS: ±' + Math.round(pos.coords.accuracy) + 'm';
-                                } else {
-                                    if (gpsDot) gpsDot.style.background = '#ef4444';
-                                    if (gpsStatusText) gpsStatusText.textContent = 'GPS: ±' + Math.round(pos.coords.accuracy) + 'm';
-                                }
+// Keyboard shortcut: Press 'G' to toggle GPS
+document.addEventListener('keydown', function(e) {
+    if ((e.key === 'g' || e.key === 'G') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        toggleGPS();
+    }
+});
 
-                                if (targetCentroid) {
-                                    updateNavigation(targetCentroid);
-                                }
-                            },
-                            function(error) {
-                                console.warn('GPS Error:', error);
-                                if (gpsDot) gpsDot.style.background = '#ef4444';
-                                if (gpsStatusText) gpsStatusText.textContent = 'Error: ' + error.message;
-                                if (startBtn) {
-                                    startBtn.disabled = false;
-                                    startBtn.textContent = '📡 Start';
-                                }
-                            },
-                            { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
-                        );
+// Create GPS coordinate display if not exists
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('mapContainer') || document.querySelector('#map').parentElement;
+    if (container && !document.getElementById('gpsCoordDisplay')) {
+        const display = document.createElement('div');
+        display.id = 'gpsCoordDisplay';
+        display.className = 'gps-coord-display';
+        container.appendChild(display);
+    }
+});
 
-                        if (gpsDot) gpsDot.style.background = '#22c55e';
-                        if (gpsStatusText) gpsStatusText.textContent = 'GPS: Active';
-                        if (startBtn) startBtn.style.display = 'none';
-                        if (stopBtn) stopBtn.style.display = 'block';
-                        showToast('📍 GPS started', 'success');
-                    },
-                    function(error) {
-                        console.warn('GPS Error:', error);
-                        if (gpsDot) gpsDot.style.background = '#ef4444';
-                        if (gpsStatusText) gpsStatusText.textContent = 'Error';
-                        if (startBtn) {
-                            startBtn.disabled = false;
-                            startBtn.textContent = '📡 Start';
-                        }
-                        showToast('GPS error: ' + error.message, 'danger');
-                    },
-                    { enableHighAccuracy: true, timeout: 10000 }
-                );
-            }
-
-            function stopGPS() {
-                if (watchId) {
-                    navigator.geolocation.clearWatch(watchId);
-                    watchId = null;
-                }
-                gpsPosition = null;
-                if (gpsDot) gpsDot.style.background = '#94a3b8';
-                if (gpsStatusText) gpsStatusText.textContent = 'GPS: Off';
-                if (startBtn) {
-                    startBtn.style.display = 'block';
-                    startBtn.disabled = false;
-                    startBtn.textContent = '📡 Start';
-                }
-                if (stopBtn) stopBtn.style.display = 'none';
-                if (navDistance) navDistance.textContent = '--';
-                if (navDirection) navDirection.textContent = '--';
-                if (compassPointer) compassPointer.setAttribute('transform', 'rotate(0 70 70)');
-                if (navigateLine) {
-                    map.removeLayer(navigateLine);
-                    navigateLine = null;
-                }
-                showToast('GPS stopped', 'info');
-            }
-
-            function updateNavigation(centroid) {
-                if (!gpsPosition) {
-                    if (navDistance) navDistance.textContent = 'GPS off';
-                    if (navDirection) navDirection.textContent = '--';
-                    return;
-                }
-
-                const from = turf.point([gpsPosition.lng, gpsPosition.lat]);
-                const to = turf.point([centroid.lng, centroid.lat]);
-                const distance = turf.distance(from, to, { units: 'kilometers' });
-                const bearing = turf.bearing(from, to);
-
-                let displayDist;
-                if (distance < 0.1) {
-                    displayDist = Math.round(distance * 1000) + ' m';
-                } else {
-                    displayDist = distance.toFixed(2) + ' km';
-                }
-                if (navDistance) navDistance.textContent = displayDist;
-
-                const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-                const idx = Math.round(((bearing % 360) / 45)) % 8;
-                if (navDirection) navDirection.textContent = dirs[idx] + ' (' + Math.round(bearing) + '°)';
-
-                if (compassPointer) compassPointer.setAttribute('transform', 'rotate(' + bearing + ' 70 70)');
-
-                if (navigateLine) {
-                    map.removeLayer(navigateLine);
-                    navigateLine = null;
-                }
-                navigateLine = L.polyline(
-                    [[gpsPosition.lat, gpsPosition.lng], [centroid.lat, centroid.lng]],
-                    { color: '#2563eb', weight: 3, dashArray: '6,6', opacity: 0.8 }
-                ).addTo(map);
-            }
-
-            function navigateToCentroid(lat, lng, parcelId) {
-                targetCentroid = { lat, lng };
-                targetParcelId = parcelId;
-                if (gpsPanel) gpsPanel.style.display = 'block';
-                if (gpsBtn) {
-                    gpsBtn.textContent = '📍';
-                    gpsBtn.style.background = '#2563eb';
-                }
-                if (gpsPosition) {
-                    updateNavigation(targetCentroid);
-                } else {
-                    if (navDistance) navDistance.textContent = 'Start GPS';
-                    if (navDirection) navDirection.textContent = 'to navigate';
-                }
-                showToast('🎯 Target: Parcel ' + parcelId, 'success');
-            }
-
-            window.navigateToCentroid = navigateToCentroid;
-
-            if (startBtn) startBtn.addEventListener('click', startGPS);
-            if (stopBtn) stopBtn.addEventListener('click', stopGPS);
-
-            console.log('GPS Floating Button initialized!');
-        });
+console.log('✅ Enhanced GPS Toggle ready - Click 📡 button or press G');
+        
     </script>
 </body>
 </html>            
