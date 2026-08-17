@@ -1,96 +1,39 @@
-
 from django.urls import path
-
 from . import views
-from django.urls import path, include
-
-from django.contrib import admin
-from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
-
 
 urlpatterns = [
     # Main map
-    path(
-        "map/",
-        views.map_view,
-        name="map_view",
-    ),
+    path("map/", views.map_view, name="map_view"),
 
     # Authentication
     path("request-otp/", views.request_otp_view, name="request_otp"),
-
-    path(
-        "verify-otp/",
-        views.verify_otp_view,
-        name="verify_otp",
-    ),
-
-    path(
-        "logout/",
-        views.logout_view,
-        name="logout",
-    ),
+    path("verify-otp/", views.verify_otp_view, name="verify_otp"),
+    path("logout/", views.logout_view, name="logout"),
 
     # Parcel API
-    path(
-        "api/parcels/",
-        views.get_parcel_data,
-        name="parcel_data",
-    ),
-
-    path(
-        "api/parcels/<str:parcel_id>/survey/",
-        views.parcel_survey,
-        name="parcel_survey",
-    ),
-
-    path(
-        "api/update/",
-        views.update_parcel,
-        name="update_parcel",
-    ),
+    path("api/parcels/", views.get_parcel_data, name="parcel_data"),
+    path("api/parcels/<str:parcel_id>/survey/", views.parcel_survey, name="parcel_survey"),
+    path("api/update/", views.update_parcel, name="update_parcel"),
 
     # Zones
-    path(
-        "api/zones/",
-        views.get_zones_geojson,
-        name="zones",
-    ),
+    path("api/zones/", views.get_zones_geojson, name="zones"),
 
     # GeoJSON export
-    path(
-        "export/geojson/",
-        views.export_verified_geojson,
-        name="export_geojson",
-    ),
+    path("export/geojson/", views.export_verified_geojson, name="export_geojson"),
 
     # Conformance
-    path(
-        "api/conformance/<str:parcel_id>/",
-        views.conformance_check,
-        name="conformance",
-    ),
+    path("api/conformance/<str:parcel_id>/", views.conformance_check, name="conformance"),
 
-    path(
-    "",
-    views.map_view,
-    name="home",
-    ),
+    # Home
+    path("", views.map_view, name="home"),
 
-    # urls.py
-    path('api/saved-layers/', views.saved_layers, name='saved_layers'),
-    path('api/saved-layers/<int:layer_id>/', views.delete_saved_layer, name='delete_saved_layer'),
+    # Saved layers
+    path("api/saved-layers/", views.saved_layers, name="saved_layers"),
+    path("api/saved-layers/<int:layer_id>/", views.delete_saved_layer, name="delete_saved_layer"),
 
-    path('admin/parcel-viewer/', views.admin_parcel_viewer, name='admin_parcel_viewer'),
+    # Admin parcel viewer
+    path("admin/parcel-viewer/", views.admin_parcel_viewer, name="admin_parcel_viewer"),
 
-    path('parcel/<str:parcel_id>/', views.parcel_detail_view, name='parcel_detail'),
-
-    path("", include("session_security.urls")),
-path("admin/", admin.site.urls),
-    path("", include("LAND_USE_PARCELS.urls")),
-    path("", include("session_security.urls")),  # Add this line
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-
+    # Parcel detail (for GPS navigation)
+    path("parcel/<str:parcel_id>/", views.parcel_detail_view, name="parcel_detail"),
+]
