@@ -2,6 +2,12 @@
 from django.urls import path
 
 from . import views
+from django.urls import path, include
+
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 urlpatterns = [
@@ -13,11 +19,7 @@ urlpatterns = [
     ),
 
     # Authentication
-    path(
-        "request-otp/",
-        views.request_otp_view,
-        name="request_otp",
-    ),
+    path("request-otp/", views.request_otp_view, name="request_otp"),
 
     path(
         "verify-otp/",
@@ -84,6 +86,11 @@ urlpatterns = [
     path('admin/parcel-viewer/', views.admin_parcel_viewer, name='admin_parcel_viewer'),
 
     path('parcel/<str:parcel_id>/', views.parcel_detail_view, name='parcel_detail'),
-]
+
+    path("", include("session_security.urls")),
+path("admin/", admin.site.urls),
+    path("", include("LAND_USE_PARCELS.urls")),
+    path("", include("session_security.urls")),  # Add this line
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 

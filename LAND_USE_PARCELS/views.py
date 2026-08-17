@@ -537,3 +537,18 @@ def admin_parcel_viewer(request):
 def parcel_detail_view(request, parcel_id):
     parcel = get_object_or_404(Parcel, parcel_id=parcel_id)
     return render(request, 'LAND_USE_PARCELS/parcel_detail.html', {'parcel': parcel})
+
+
+from django.contrib.auth import logout
+from django.http import JsonResponse
+
+@login_required
+def check_session(request):
+    """Check if session is still active."""
+    return JsonResponse({'active': request.user.is_authenticated})
+
+@login_required
+def logout_inactive(request):
+    """Logout due to inactivity."""
+    logout(request)
+    return JsonResponse({'logout': True})
