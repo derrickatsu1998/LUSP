@@ -89,7 +89,8 @@ def structure_payload(structure):
 @require_http_methods(["GET", "POST"])
 def request_otp_view(request):
     if request.method == "GET":
-        return render(request, "LAND_USE_PARCELS/request_otp.html")
+        return render(request, "LAND_USE_PARCELS/login.html")
+    # ... rest of the view
 
     email = request.POST.get("email", "").strip().lower()
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
