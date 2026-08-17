@@ -680,8 +680,13 @@
     <nav class="navbar-custom">
         <span class="brand"><i class="bi bi-map-fill"></i> GSSM_LUSP</span>
         <div class="navbar-right">
-            <span class="badge-gps" id="gpsStatus" style="display:none;"><i class="bi bi-satellite-fill"></i> GPS</span>
-            <button class="menu-btn" id="gpsToggle" title="Toggle GPS Tracking"><i class="bi bi-satellite"></i></button>
+            <span class="badge-gps" id="gpsStatus" style="display:none;">GPS</span>
+    <!-- VISIBLE GPS BUTTON -->
+    <button id="gpsVisibleBtn" onclick="toggleGPS()" style="background:#2563eb;color:white;border:none;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(37,99,235,0.3);">
+        📡 GPS
+    </button>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle menu"><i class="bi bi-list"></i></button>
+    <a href="/logout" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i></a>
             <button class="menu-btn" id="pointPlotToggle" title="Point Plotting Tools"><i class="bi bi-geo-alt"></i></button>
             <button class="menu-btn" id="layersToggle" aria-label="Toggle layers"><i class="bi bi-layers"></i></button>
             <button class="menu-btn" id="menuToggle" aria-label="Toggle menu"><i class="bi bi-list"></i></button>
