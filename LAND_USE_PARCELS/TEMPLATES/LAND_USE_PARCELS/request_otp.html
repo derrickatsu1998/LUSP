@@ -354,143 +354,170 @@
     </div>
 
     <script>
-        // ============================================================
-        // SAFE JAVASCRIPT - Only runs if elements exist
-        // ============================================================
-        (function() {
-            'use strict';
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('otpForm');
+    const emailInput = document.getElementById('email');
+    const submitBtn = document.getElementById('submitBtn');
+    const messageDiv = document.getElementById('message');
+    const otpTimerDiv = document.getElementById('otpTimer');
+    const timerCountdown = document.getElementById('timerCountdown');
+    const resendBtn = document.getElementById('resendBtn');
 
-            var form = document.getElementById('otpForm');
-            var emailInput = document.getElementById('email');
-            var submitBtn = document.getElementById('submitBtn');
-            var messageDiv = document.getElementById('message');
+    let countdownInterval = null;
+    let isSubmitting = false;
 
-            // If the form doesn't exist, stop everything
-            if (!form) {
-                console.warn('OTP form not found - skipping JavaScript');
+    const urlParams = new URLSearchParams(window.location.search);
+    const nextUrl = urlParams.get('next');
+
+    // Get CSRF token from the form's hidden input
+    function getCSRFToken() {
+        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (csrfInput) {
+            return csrfInput.value;
+        }
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        return cookieValue || '';
+    }
+
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function showMessage(text, type = 'info') {
+        messageDiv.textContent = text;
+        messageDiv.className = 'message ' + type;
+        messageDiv.style.display = 'block';
+    }
+
+    function hideMessage() {
+        messageDiv.style.display = 'none';
+    }
+
+    function startCountdown(seconds) {
+        let remaining = seconds;
+        otpTimerDiv.style.display = 'block';
+        timerCountdown.textContent = remaining;
+        resendBtn.disabled = true;
+
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+        }
+
+        countdownInterval = setInterval(() => {
+            remaining--;
+            timerCountdown.textContent = remaining;
+
+            if (remaining <= 0) {
+                clearInterval(countdownInterval);
+                resendBtn.disabled = false;
+                timerCountdown.textContent = '0';
+            }
+        }, 1000);
+    }
+
+    if (emailInput) {
+        emailInput.focus();
+    }
+
+    // ============================================================
+    // SAFETY CHECK - Only add event listener if form exists
+    // ============================================================
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (isSubmitting) return;
+
+            const email = emailInput ? emailInput.value.trim() : '';
+
+            if (!email) {
+                showMessage('Please enter your email address.', 'error');
+                if (emailInput) emailInput.focus();
                 return;
             }
 
-            console.log('OTP form found - initializing...');
-
-            var isSubmitting = false;
-
-            function getCSRFToken() {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = cookies[i].trim();
-                    if (cookie.indexOf('csrftoken=') === 0) {
-                        return cookie.substring('csrftoken='.length);
-                    }
+            if (!isValidEmail(email)) {
+                showMessage('Please enter a valid email address.', 'error');
+                if (emailInput) {
+                    emailInput.focus();
+                    emailInput.select();
                 }
-                return '';
+                return;
             }
 
-            function isValidEmail(email) {
-                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-            }
+            isSubmitting = true;
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Sending...';
+            hideMessage();
 
-            function showMessage(text, type) {
-                if (!messageDiv) return;
-                var icons = { success: '✅', error: '❌', info: 'ℹ️' };
-                messageDiv.innerHTML = '<span class="icon">' + (icons[type] || 'ℹ️') + '</span> ' + text;
-                messageDiv.className = 'message ' + (type || 'info');
-                messageDiv.style.display = 'flex';
-            }
-
-            function hideMessage() {
-                if (!messageDiv) return;
-                messageDiv.style.display = 'none';
-            }
-
-            // Focus on email field
-            if (emailInput) {
-                emailInput.focus();
-            }
-
-            // Handle form submission
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                if (isSubmitting) return;
-
-                var email = emailInput ? emailInput.value.trim() : '';
-
-                if (!email) {
-                    showMessage('Please enter your email address.', 'error');
-                    if (emailInput) emailInput.focus();
-                    return;
+            const formData = new FormData(form);
+            const csrfToken = getCSRFToken();
+            
+            console.log('CSRF Token:', csrfToken);
+            
+            fetch('/request-otp/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.status === 403) {
+                    throw new Error('CSRF verification failed. Please refresh and try again.');
                 }
-
-                if (!isValidEmail(email)) {
-                    showMessage('Please enter a valid email address.', 'error');
-                    if (emailInput) {
-                        emailInput.focus();
-                        emailInput.select();
-                    }
-                    return;
+                if (!response.ok) {
+                    throw new Error('Server error: ' + response.status);
                 }
+                return response.json();
+            })
+            .then(data => {
+                isSubmitting = false;
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔑 Send One-Time Password';
 
-                isSubmitting = true;
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = 'Sending...';
+                if (data.success) {
+                    showMessage('✅ OTP sent successfully! Check your email.', 'success');
+                    startCountdown(60);
+                    if (data.redirect_url) {
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url;
+                        }, 2000);
+                    }
+                } else {
+                    showMessage('❌ ' + (data.error || 'Failed to send OTP. Please try again.'), 'error');
                 }
-                hideMessage();
-
-                var formData = new FormData(form);
-                var csrfToken = getCSRFToken();
-
-                fetch('/request-otp/', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': csrfToken
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(function(response) {
-                    if (response.status === 403) {
-                        throw new Error('CSRF verification failed. Please refresh and try again.');
-                    }
-                    if (!response.ok) {
-                        throw new Error('Server error: ' + response.status);
-                    }
-                    return response.json();
-                })
-                .then(function(data) {
-                    isSubmitting = false;
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Send One-Time Password';
-                    }
-
-                    if (data.success) {
-                        showMessage('OTP sent successfully! Please check your email.', 'success');
-                        if (data.redirect_url) {
-                            setTimeout(function() {
-                                window.location.href = data.redirect_url;
-                            }, 2500);
-                        }
-                    } else {
-                        showMessage(data.error || 'Failed to send OTP. Please try again.', 'error');
-                    }
-                })
-                .catch(function(error) {
-                    console.error('Error:', error);
-                    isSubmitting = false;
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Send One-Time Password';
-                    }
-                    showMessage(error.message || 'Network error. Please check your connection.', 'error');
-                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                isSubmitting = false;
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🔑 Send One-Time Password';
+                showMessage('❌ ' + error.message, 'error');
             });
+        });
 
-            console.log('OTP form initialized successfully!');
-        })();
-    </script>
+        if (resendBtn) {
+            resendBtn.addEventListener('click', function() {
+                if (!resendBtn.disabled) {
+                    form.dispatchEvent(new Event('submit'));
+                }
+            });
+        }
 
+    } else {
+        console.error('Form with id "otpForm" not found!');
+    }
+
+    if (nextUrl) {
+        showMessage('Please sign in to continue.', 'info');
+    }
+});
+</script>
 </body>
 </html>
