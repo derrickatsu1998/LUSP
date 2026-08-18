@@ -1,4 +1,3 @@
-cat > LAND_USE_PARCELS/templates/LAND_USE_PARCELS/request_otp.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,20 +8,37 @@ cat > LAND_USE_PARCELS/templates/LAND_USE_PARCELS/request_otp.html << 'EOF'
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <style>
         body {
-            background: linear-gradient(135deg, #0f2b24 0%, #1a4a3c 100%);
+            background: url('https://media.sketchfab.com/models/dd478312fb8b4a77919c64d1401ba6f7/thumbnails/c7d505d833db4240a37da55122868f37/6be942b657dc4335bf6b7bce19e9db70.jpeg') no-repeat center center fixed;
+            background-size: cover;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 0;
         }
         .request-card {
-            background: white;
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
             border-radius: 24px;
             padding: 40px 36px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            max-width: 420px;
             width: 100%;
+            border: 1px solid rgba(255,255,255,0.2);
         }
         .request-card .icon {
             text-align: center;
@@ -34,11 +50,13 @@ cat > LAND_USE_PARCELS/templates/LAND_USE_PARCELS/request_otp.html << 'EOF'
             text-align: center;
             font-weight: 700;
             color: #0f2b24;
+            margin-bottom: 4px;
         }
-        .request-card p {
+        .request-card p.sub {
             text-align: center;
-            color: #64748b;
+            color: #4a5568;
             font-size: 0.9rem;
+            margin-bottom: 20px;
         }
         .form-control:focus {
             border-color: #0f2b24;
@@ -51,6 +69,7 @@ cat > LAND_USE_PARCELS/templates/LAND_USE_PARCELS/request_otp.html << 'EOF'
             padding: 12px;
             font-weight: 600;
             width: 100%;
+            transition: background 0.2s;
         }
         .btn-primary:hover {
             background: #1a4a3c;
@@ -62,15 +81,23 @@ cat > LAND_USE_PARCELS/templates/LAND_USE_PARCELS/request_otp.html << 'EOF'
             text-align: center;
             margin-top: 16px;
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: #718096;
+        }
+        .footer-text a {
+            color: #0f2b24;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .footer-text a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="request-card">
-        <div class="icon"><i class="bi bi-envelope"></i></div>
+        <div class="icon"><i class="bi bi-envelope-paper"></i></div>
         <h2>Request OTP</h2>
-        <p>Enter your email to receive a one-time password.</p>
+        <p class="sub">Enter your email to receive a one‑time password</p>
 
         {% if messages %}
             {% for message in messages %}
@@ -86,6 +113,7 @@ cat > LAND_USE_PARCELS/templates/LAND_USE_PARCELS/request_otp.html << 'EOF'
             <div class="mb-4">
                 <label for="email" class="form-label fw-semibold">Email Address</label>
                 <input type="email" class="form-control" id="email" name="email" placeholder="your@email.com" required autofocus />
+                <div class="form-text">We'll send a 6‑digit code to this address.</div>
             </div>
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-send me-2"></i> Send OTP
@@ -93,11 +121,10 @@ cat > LAND_USE_PARCELS/templates/LAND_USE_PARCELS/request_otp.html << 'EOF'
         </form>
 
         <div class="footer-text">
-            &copy; 2026 GSSM_LUSP &bull; All rights reserved
+            Already have an account? <a href="{% url 'login' %}">Log in</a>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-EOF
