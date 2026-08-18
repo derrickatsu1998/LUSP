@@ -98,10 +98,10 @@ import random
 @require_http_methods(["GET", "POST"])
 def request_otp_view(request):
     if request.method == 'GET':
-        # Clear stale messages before showing the page
+        # Clear all messages before rendering
         storage = messages.get_messages(request)
-        for _ in storage:
-            pass
+        # Mark all messages as used so they won't be displayed
+        storage.used = True
         return render(request, 'LAND_USE_PARCELS/request_otp.html')
 
     # POST logic (unchanged)
