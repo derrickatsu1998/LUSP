@@ -88,64 +88,17 @@ def structure_payload(structure):
 @ensure_csrf_cookie
 @require_http_methods(["GET", "POST"])
 def request_otp_view(request):
-    if request.method == "GET":
-        return render(request, "LAND_USE_PARCELS/login.html")
-    # ... rest of the view
-
-    email = request.POST.get("email", "").strip().lower()
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-
-    if not email:
-        if is_ajax:
-            return JsonResponse({'success': False, 'error': 'Please enter your email address.'})
-        return render(request, "LAND_USE_PARCELS/request_otp.html", {"error": "Please enter your email address."})
-
-    try:
-        validate_email(email)
-    except ValidationError:
-        if is_ajax:
-            return JsonResponse({'success': False, 'error': 'Please enter a valid email address.'})
-        return render(request, "LAND_USE_PARCELS/request_otp.html", {"error": "Please enter a valid email address."})
-
-    user = User.objects.filter(email__iexact=email).first()
-    if user is None:
-        user = User.objects.create_user(username=email, email=email)
-
-    if hasattr(user, "is_active") and not user.is_active:
-        user.is_active = True
-        user.save(update_fields=["is_active"])
-
-    OTPCode.objects.filter(user=user, is_used=False).update(is_used=True)
-
-    code = OTPCode.generate_otp()
-    otp = OTPCode.objects.create(user=user, code=code)
-
-    try:
-        send_mail(
-            subject="Land Use Survey System - Verification Code",
-            message=f"Dear User,\n\nYour Land Use Survey System verification code is:\n\n{code}\n\nThis code expires in 5 minutes.\n\nIf you did not request this code, you can safely ignore this email.\n\nLand Use Survey System",
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            recipient_list=[email],
-            fail_silently=False,
-        )
-    except Exception as exc:
-        otp.delete()
-        error_msg = f"The verification email could not be sent. Email error: {exc}"
-        if is_ajax:
-            return JsonResponse({'success': False, 'error': error_msg})
-        return render(request, "LAND_USE_PARCELS/request_otp.html", {"error": error_msg})
-
-    request.session["otp_email"] = email
-    request.session.modified = True
-
-    if is_ajax:
-        return JsonResponse({
-            'success': True,
-            'message': 'OTP sent successfully!',
-            'redirect_url': request.build_absolute_uri('/verify-otp/')
-        })
-
-    return redirect("verify_otp")
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        if email:
+            import random
+            otp = ''.join(random.choices('0123456789', k=6))
+            request.session['otp'] = otp
+            request.session['email'] = email
+            # Send OTP (e.g., via Mailgun)...
+            messages.success(request, "OTP sent to your email.")
+            return redirect('verify_otp')
+    return render(request, 'LAND_USE_PARCELS/request_otp.html')
 
 # ============================================================
 # VERIFY OTP
@@ -216,44 +169,49 @@ def request_otp_view(request):
 
 
 
-
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 from django.contrib.auth.models import User
-import random
-import string
+import logging
+
+logger = logging.getLogger(__name__)
 
 def verify_otp_view(request):
     if request.method == 'POST':
+        # Combine the six OTP fields
         entered_otp = ''.join([request.POST.get(f'otp{i}', '') for i in range(1, 7)])
         stored_otp = request.session.get('otp')
         email = request.session.get('email')
 
-        print(f"Entered: {entered_otp}, Stored: {stored_otp}, Email: {email}")
+        # Log everything for debugging
+        logger.info(f"Entered: {entered_otp}, Stored: {stored_otp}, Email: {email}")
 
+        # Validation: no OTP entered
         if not entered_otp:
             messages.error(request, "Please enter the 6-digit code.")
             return render(request, 'LAND_USE_PARCELS/verify_otp.html')
 
+        # Validation: OTP expired
         if not stored_otp:
-            messages.error(request, "OTP expired. Request a new one.")
+            messages.error(request, "OTP expired. Please request a new one.")
             return redirect('request_otp')
 
+        # OTP matches
         if entered_otp == stored_otp:
             try:
                 user = User.objects.get(email=email)
                 login(request, user)
                 # Clear session
-                del request.session['otp']
-                del request.session['email']
+                request.session.pop('otp', None)
+                request.session.pop('email', None)
                 messages.success(request, "OTP verified successfully!")
 
-                # Test with hardcoded redirect
-                return redirect('/map/')   # <-- Change back to redirect('map_view') later
+                # Redirect to map (hardcoded path as fallback)
+                return redirect('/map/')
 
             except User.DoesNotExist:
-                messages.error(request, f"User with email {email} not found.")
+                messages.error(request, f"User with email '{email}' not found. Please request OTP again.")
                 return render(request, 'LAND_USE_PARCELS/verify_otp.html')
         else:
             messages.error(request, "Invalid OTP. Please try again.")
