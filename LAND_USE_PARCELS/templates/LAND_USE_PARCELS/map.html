@@ -634,6 +634,288 @@
             cursor: pointer !important;
             padding: 0 4px !important;
         }
+
+
+        /* ============================================================
+   MOBILE RESPONSIVE OVERHAUL
+   ============================================================ */
+
+/* --- Navbar --- */
+@media (max-width: 768px) {
+    .navbar-custom {
+        padding: 4px 10px;
+        height: 48px;
+        gap: 4px;
+    }
+    .navbar-custom .brand {
+        font-size: 0.9rem;
+    }
+    .navbar-custom .brand i {
+        font-size: 1.1rem;
+    }
+    .navbar-right .badge-gps {
+        display: none !important;  /* hide the "GPS" label, keep the button */
+    }
+    /* Hide secondary navbar buttons, show a "menu" toggle */
+    .navbar-right .menu-btn:not(#menuToggle):not(#gpsNavBtn) {
+        display: none;
+    }
+    /* Show all buttons inside a slide-out menu (handled by the existing slide-menu) */
+    #menuToggle {
+        display: inline-block !important;
+    }
+    /* Search bar */
+    #searchForm {
+        margin-right: 2px;
+    }
+    #searchInput {
+        width: 100px !important;
+        font-size: 0.75rem !important;
+        padding: 2px 8px !important;
+    }
+    #searchInput:focus {
+        width: 140px !important;
+    }
+    #searchForm button {
+        font-size: 1rem !important;
+    }
+    /* Visible GPS button in navbar – keep it */
+    #gpsNavBtn {
+        padding: 2px 10px !important;
+        font-size: 0.7rem !important;
+        gap: 2px !important;
+    }
+    #gpsNavBtn span {
+        display: none;  /* hide "GPS" text, keep emoji */
+    }
+}
+
+/* --- GPS Floating Button --- */
+@media (max-width: 768px) {
+    #gpsFloatingBtn {
+        width: 60px !important;
+        height: 60px !important;
+        bottom: 120px !important;
+        right: 12px !important;
+        font-size: 28px !important;
+        border-width: 3px !important;
+    }
+    #gpsStatusBadge {
+        bottom: 190px !important;
+        right: 16px !important;
+        font-size: 10px !important;
+        padding: 2px 10px !important;
+    }
+}
+
+/* --- Point Toolbar (now a floating FAB + bottom sheet) --- */
+@media (max-width: 768px) {
+    #pointToolbar {
+        position: fixed !important;
+        bottom: 80px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 90% !important;
+        max-height: 55vh !important;
+        overflow-y: auto !important;
+        padding: 12px !important;
+        border-radius: 20px !important;
+        background: rgba(255,255,255,0.96) !important;
+        backdrop-filter: blur(12px) !important;
+        box-shadow: 0 -4px 30px rgba(0,0,0,0.2) !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+        display: none !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        z-index: 9999 !important;
+        justify-content: center !important;
+    }
+    #pointToolbar.open {
+        display: flex !important;
+    }
+    #pointToolbar .pt-btn {
+        font-size: 0.7rem !important;
+        padding: 6px 12px !important;
+        height: 36px !important;
+    }
+    #pointToolbar .pt-control-group select,
+    #pointToolbar .pt-control-group input[type="color"] {
+        height: 36px !important;
+        font-size: 0.7rem !important;
+    }
+    /* Toggle button for the toolbar */
+    #ptToolbarToggle {
+        position: fixed !important;
+        bottom: 16px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 10000 !important;
+        background: #0f2b24 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 30px !important;
+        padding: 8px 20px !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        cursor: pointer !important;
+        touch-action: manipulation !important;
+    }
+}
+
+/* --- Layers Panel → Bottom Sheet --- */
+@media (max-width: 768px) {
+    #layersPanel {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        max-height: 60vh !important;
+        width: 100% !important;
+        border-radius: 24px 24px 0 0 !important;
+        padding: 20px 16px !important;
+        background: rgba(255,255,255,0.98) !important;
+        backdrop-filter: blur(12px) !important;
+        box-shadow: 0 -8px 40px rgba(0,0,0,0.15) !important;
+        transform: translateY(100%) !important;
+        transition: transform 0.3s ease !important;
+        z-index: 1060 !important;
+        overflow-y: auto !important;
+    }
+    #layersPanel.open {
+        transform: translateY(0) !important;
+    }
+    #layersPanel::before {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 4px;
+        background: #d1d5db;
+        border-radius: 4px;
+        margin: 0 auto 12px;
+    }
+    /* toggle button for layers */
+    #layersToggleMobile {
+        position: fixed !important;
+        top: 60px !important;
+        right: 12px !important;
+        z-index: 1050 !important;
+        background: rgba(15,43,36,0.9) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 50% !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.2rem !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.2) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        touch-action: manipulation !important;
+    }
+}
+
+/* --- Coordinate panel (hide on mobile, show via toggle) --- */
+@media (max-width: 768px) {
+    #coordPanel {
+        display: none !important;
+        position: fixed !important;
+        bottom: 120px !important;
+        left: 12px !important;
+        max-width: 200px !important;
+        font-size: 0.55rem !important;
+        padding: 8px 12px !important;
+        background: rgba(0,0,0,0.8) !important;
+        color: white !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(8px) !important;
+    }
+    #coordPanel.show {
+        display: block !important;
+    }
+    #coordToggleMobile {
+        position: fixed !important;
+        bottom: 160px !important;
+        left: 12px !important;
+        z-index: 950 !important;
+        background: rgba(15,43,36,0.9) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 50% !important;
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 0.8rem !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        touch-action: manipulation !important;
+    }
+}
+
+/* --- Scale bar --- */
+@media (max-width: 768px) {
+    .scale-bar-container {
+        bottom: 70px !important;
+        left: 12px !important;
+        padding: 4px 10px !important;
+        font-size: 0.6rem !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+    }
+    .scale-bar-container .scale-text {
+        min-width: 50px !important;
+        font-size: 0.55rem !important;
+    }
+    .scale-bar-container .scale-input {
+        width: 50px !important;
+        font-size: 0.6rem !important;
+    }
+    .scale-bar-container .scale-input-btn {
+        padding: 2px 8px !important;
+        font-size: 0.6rem !important;
+    }
+    .scale-bar .bar-part {
+        min-width: 10px !important;
+    }
+}
+
+/* --- General touch improvements --- */
+@media (max-width: 768px) {
+    .leaflet-control-zoom {
+        bottom: 180px !important;
+        right: 12px !important;
+    }
+    .leaflet-control-zoom a {
+        width: 36px !important;
+        height: 36px !important;
+        line-height: 36px !important;
+        font-size: 1.2rem !important;
+    }
+    .leaflet-popup-content {
+        font-size: 0.8rem !important;
+    }
+    .leaflet-popup-content button {
+        padding: 4px 12px !important;
+        font-size: 0.75rem !important;
+    }
+    /* Toast container */
+    .toast-container {
+        top: 56px !important;
+        right: 8px !important;
+        min-width: 200px !important;
+    }
+    .toast {
+        font-size: 0.75rem !important;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -670,6 +952,17 @@
         <!-- MAP -->
         <div id="map" style="height:100%; width:100%; background:#e5e9f0;"></div>
     </div>
+
+    <!-- Mobile Toggles (visible only on small screens) -->
+<button id="ptToolbarToggle" style="display:none;">
+    🛠️ Tools
+</button>
+<button id="layersToggleMobile" style="display:none;">
+    🗺️
+</button>
+<button id="coordToggleMobile" style="display:none;">
+    📍
+</button>
 
     <!-- ============================================================
     GPS FLOATING BUTTON – FIXED POSITION (OUTSIDE CONTAINER)
@@ -4549,6 +4842,56 @@
                 showToast('📍 Found: ' + name, 'success');
             });
         }
+
+        // ---- MOBILE TOGGLES ----
+document.addEventListener('DOMContentLoaded', function() {
+    const isMobile = window.innerWidth <= 768;
+
+    // Point toolbar toggle
+    const ptToggle = document.getElementById('ptToolbarToggle');
+    const ptToolbar = document.getElementById('pointToolbar');
+    if (ptToggle && ptToolbar) {
+        ptToggle.style.display = isMobile ? 'flex' : 'none';
+        ptToggle.addEventListener('click', function() {
+            ptToolbar.classList.toggle('open');
+            this.textContent = ptToolbar.classList.contains('open') ? '✕ Close' : '🛠️ Tools';
+        });
+    }
+
+    // Layers panel toggle (bottom sheet)
+    const layersToggle = document.getElementById('layersToggleMobile');
+    const layersPanel = document.getElementById('layersPanel');
+    if (layersToggle && layersPanel) {
+        layersToggle.style.display = isMobile ? 'flex' : 'none';
+        layersToggle.addEventListener('click', function() {
+            layersPanel.classList.toggle('open');
+        });
+        // Close when clicking outside (optional)
+        document.addEventListener('click', function(e) {
+            if (layersPanel.classList.contains('open') && 
+                !layersPanel.contains(e.target) && 
+                e.target !== layersToggle) {
+                layersPanel.classList.remove('open');
+            }
+        });
+    }
+
+    // Coordinate panel toggle
+    const coordToggle = document.getElementById('coordToggleMobile');
+    const coordPanel = document.getElementById('coordPanel');
+    if (coordToggle && coordPanel) {
+        coordToggle.style.display = isMobile ? 'flex' : 'none';
+        coordToggle.addEventListener('click', function() {
+            coordPanel.classList.toggle('show');
+        });
+    }
+
+    // Adjust existing navbar: hide the old layers toggle on mobile
+    if (isMobile) {
+        const layersToggleOld = document.getElementById('layersToggle');
+        if (layersToggleOld) layersToggleOld.style.display = 'none';
+    }
+});
     </script>
 </body>
 </html>
