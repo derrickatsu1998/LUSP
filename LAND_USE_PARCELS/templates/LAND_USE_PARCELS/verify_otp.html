@@ -195,7 +195,7 @@
             <a href="{% url 'request_otp' %}">Resend OTP</a>
         </div>
         <div class="footer-text">
-            &copy; BetaCode Software Solutions And Consultancy &bull;           All rights reserved
+            &copy; BetaCode Software Solutions And Consultancy &bull; All rights reserved
         </div>
     </div>
 
@@ -236,7 +236,6 @@
             // Attach events to each input
             inputs.forEach((input, idx, arr) => {
                 input.addEventListener('input', function(e) {
-                    // Allow only digits
                     this.value = this.value.replace(/\D/g, '');
                     if (this.value.length > 1) {
                         this.value = this.value.slice(0, 1);
@@ -283,32 +282,10 @@
                     return;
                 }
                 clearInvalidState();
-                // Optional: show loading state
+                // Disable button and show spinner
                 verifyBtn.disabled = true;
                 verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Verifying...';
-                // Re-enable after timeout (if page doesn't reload)
-                setTimeout(() => {
-                    verifyBtn.disabled = false;
-                    verifyBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i> Verify OTP';
-                }, 10000);
-            });
-
-            // Auto-submit when all 6 digits are entered
-            let autoSubmitTimeout = null;
-            inputs.forEach((input, idx, arr) => {
-                input.addEventListener('input', function() {
-                    const allFilled = Array.from(arr).every(i => i.value.length === 1);
-                    if (allFilled) {
-                        clearInvalidState();
-                        if (autoSubmitTimeout) {
-                            clearTimeout(autoSubmitTimeout);
-                        }
-                        autoSubmitTimeout = setTimeout(() => {
-                            form.dispatchEvent(new Event('submit'));
-                            autoSubmitTimeout = null;
-                        }, 400);
-                    }
-                });
+                // No auto-re-enable – the page will reload on success or show error.
             });
 
             // Initial state
