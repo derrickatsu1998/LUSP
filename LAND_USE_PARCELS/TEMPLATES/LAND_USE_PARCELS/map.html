@@ -671,6 +671,24 @@
     pointer-events: auto !important;
     z-index: 99999 !important;
 }
+
+
+/* Search bar in navbar */
+#searchInput {
+    width: 140px;
+}
+#searchInput:focus {
+    width: 200px;
+    background: white !important;
+}
+@media (max-width: 600px) {
+    #searchInput {
+        width: 100px;
+    }
+    #searchInput:focus {
+        width: 140px;
+    }
+}
     </style>
 <head>
     <meta charset="UTF-8" />
@@ -840,6 +858,15 @@
         <span class="brand"><i class="bi bi-map-fill"></i> GSSM_LUSP</span>
         <div class="navbar-right">
             <span class="badge-gps" id="gpsStatus" style="display:none;"><i class="bi bi-satellite-fill"></i> GPS</span>
+
+            <!-- Search Form -->
+            <form id="searchForm" class="d-flex align-items-center" style="gap:4px; margin-right:4px;" onsubmit="searchLocation(event)">
+                <input type="text" id="searchInput" placeholder="Search places..." 
+                    style="border:none; border-radius:20px; padding:4px 12px; font-size:0.85rem; width:140px; background:rgba(255,255,255,0.9); color:#0f2b24; outline:none; transition:width 0.3s;">
+                <button type="submit" style="background:none; border:none; color:white; font-size:1.2rem; cursor:pointer; padding:0 4px;">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
             <!-- VISIBLE GPS BUTTON (replaces the invisible satellite icon) -->
             <button id="gpsNavBtn" onclick="toggleGPS()" style="background:#2563eb;color:white;border:none;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(37,99,235,0.3);">
                 📡 GPS
@@ -4936,7 +4963,57 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('✅ Enhanced GPS Toggle ready - Click 📡 button or press G');
-        
+       
+
+// ============================================================
+// SEARCH LOCATION USING LEAFLET GEOCODER
+// ============================================================
+// Create a geocoder instance (Nominatim)
+const geocoder = L.Control.Geocoder.nominatim({
+    geocodingQueryParams: {
+        limit: 5,
+        countrycodes: 'gh'  // optional: restrict to Ghana
+    }
+});
+
+function searchLocation(event) {
+    event.preventDefault();
+    const query = document.getElementById('searchInput').value.trim();
+    if (!query) return;
+
+    // Show a toast/status
+    showToast('🔍 Searching for "' + query + '"...', 'info');
+
+    geocoder.geocode(query, function(results) {
+        if (!results || results.length === 0) {
+            showToast('❌ No results found for "' + query + '"', 'danger');
+            return;
+        }
+        const result = results[0];
+        const lat = result.center.lat;
+        const lng = result.center.lng;
+        const name = result.name || query;
+
+        // Fly to the location
+        map.flyTo([lat, lng], 16, { duration: 1.5 });
+
+        // Optional: Add a temporary marker
+        const marker = L.marker([lat, lng], {
+            icon: L.divIcon({
+                className: 'search-marker',
+                html: '<div style="background:#f59e0b;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 6px rgba(245,158,11,0.4);"></div>',
+                iconSize: [20,20],
+                iconAnchor: [10,10]
+            })
+        }).addTo(map);
+        setTimeout(() => map.removeLayer(marker), 5000);
+
+        showToast('📍 Found: ' + name, 'success');
+    });
+}
+
+// Also search on Enter (already handled by form submit)
+// Optionally add a clear button or focus improvements
     </script>
 </body>
 </html>            
