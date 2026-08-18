@@ -1,118 +1,3 @@
-{% comment %} <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - GSSM_LUSP</title>
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-    <style>
-        body {
-            background: linear-gradient(135deg, #0f2b24 0%, #1a4a3c 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-        }
-        .login-card {
-            background: white;
-            border-radius: 24px;
-            padding: 40px 36px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 420px;
-            width: 100%;
-        }
-        .login-card .brand {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-        .login-card .brand i {
-            font-size: 2.5rem;
-            color: #0f2b24;
-        }
-        .login-card .brand h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #0f2b24;
-            margin-top: 8px;
-        }
-        .login-card .brand p {
-            color: #64748b;
-            font-size: 0.85rem;
-        }
-        .form-control:focus {
-            border-color: #0f2b24;
-            box-shadow: 0 0 0 3px rgba(15,43,36,0.15);
-        }
-        .btn-primary {
-            background: #0f2b24;
-            border: none;
-            border-radius: 12px;
-            padding: 12px;
-            font-weight: 600;
-            width: 100%;
-        }
-        .btn-primary:hover {
-            background: #1a4a3c;
-        }
-        .btn-primary:disabled {
-            opacity: 0.6;
-        }
-        .alert {
-            border-radius: 12px;
-        }
-        .footer-text {
-            text-align: center;
-            margin-top: 16px;
-            font-size: 0.75rem;
-            color: #94a3b8;
-        }
-    </style>
-</head>
-<body>
-    <div class="login-card">
-        <div class="brand">
-            <i class="bi bi-map-fill"></i>
-            <h1>GSSM_LUSP</h1>
-            <p>Land Use &amp; Parcel Survey Platform</p>
-        </div>
-
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <form method="post">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="username" class="form-label fw-semibold">Username</label>
-                <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required autofocus />
-            </div>
-            <div class="mb-4">
-                <label for="password" class="form-label fw-semibold">Password</label>
-                <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required />
-            </div>
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-box-arrow-in-right me-2"></i> Log In
-            </button>
-        </form>
-
-        <div class="footer-text">
-            &copy; 2026 GSSM_LUSP &bull; All rights reserved
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html> {% endcomment %}
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -122,22 +7,44 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <style>
+        /* Full‑page background image */
         body {
-            background: linear-gradient(135deg, #0f2b24 0%, #1a4a3c 100%);
+            background: url('https://th.bing.com/th/id/R.cfc15eb8577e8925dee2c291006c6d03?rik=yds0ogCmFLZBuw&riu=http%3a%2f%2fwww.geoinfinity.in%2fcap_planning.jpg&ehk=Nhy5A5nvTpsEvYa5ugDrerWA0UB2A8dyZWaxeTfImo4%3d&risl=&pid=ImgRaw&r=0') no-repeat center center fixed;
+            background-size: cover;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
         }
+
+        /* Dark overlay to improve readability */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 0;
+        }
+
         .login-card {
-            background: white;
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
             border-radius: 24px;
             padding: 40px 36px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
             max-width: 420px;
             width: 100%;
+            border: 1px solid rgba(255,255,255,0.2);
         }
+
         .login-card .brand {
             text-align: center;
             margin-bottom: 28px;
@@ -153,13 +60,15 @@
             margin-top: 8px;
         }
         .login-card .brand p {
-            color: #64748b;
+            color: #4a5568;
             font-size: 0.85rem;
         }
+
         .form-control:focus {
             border-color: #0f2b24;
             box-shadow: 0 0 0 3px rgba(15,43,36,0.15);
         }
+
         .btn-primary {
             background: #0f2b24;
             border: none;
@@ -167,18 +76,21 @@
             padding: 12px;
             font-weight: 600;
             width: 100%;
+            transition: background 0.2s;
         }
         .btn-primary:hover {
             background: #1a4a3c;
         }
+
         .alert {
             border-radius: 12px;
         }
+
         .footer-text {
             text-align: center;
             margin-top: 16px;
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: #718096;
         }
     </style>
 </head>
