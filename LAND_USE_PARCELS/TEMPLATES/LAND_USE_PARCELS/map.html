@@ -663,14 +663,164 @@
                 background: #e5e9f0;
             }
     </style>
-
 <head>
-    <!-- ... existing code ... -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>GSSM_LUSP – GPS & Parcel Survey</title>
+
+    <!-- Bootstrap + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <!-- Leaflet + plugins -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+
+    <!-- Turf.js & proj4js -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+
+    <!-- Import libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shpjs/3.1.0/shp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.0/dist/togeojson.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wellknown/0.5.0/wellknown.min.js"></script>
+    <script src="https://unpkg.com/@ngageoint/geopackage@4.2.8/dist/geopackage.min.js"></script>
+    <script>
+        window.addEventListener('load', function() {
+            const gp = window.GeoPackage || window.geopackage;
+            if (gp?.setSqljsWasmLocateFile) {
+                gp.setSqljsWasmLocateFile(file => `https://unpkg.com/@ngageoint/geopackage@4.2.8/dist/${file}`);
+            }
+        });
+    </script>
+
+    <!-- DXF Parser with fallbacks -->
+    <script>
+        (function loadDXFParser() {
+            if (typeof DxfParser !== 'undefined') return;
+            const sources = [
+                'https://cdn.jsdelivr.net/npm/dxf-parser@1.0.0/dist/dxf-parser.min.js',
+                'https://unpkg.com/dxf-parser@1.0.0/dist/dxf-parser.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/dxf-parser/1.0.0/dxf-parser.min.js'
+            ];
+            let idx = 0;
+            function tryLoad() {
+                if (idx >= sources.length) { console.warn('DXF parser not loaded.'); return; }
+                const s = document.createElement('script');
+                s.src = sources[idx];
+                s.onload = function() { if (typeof DxfParser === 'undefined') { idx++; tryLoad(); } };
+                s.onerror = function() { idx++; tryLoad(); };
+                document.head.appendChild(s);
+            }
+            tryLoad();
+        })();
+    </script>
+
+    <!-- Favicon (using emoji map) -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🗺️%3C/text%3E%3C/svg%3E">
-    <!-- ... rest of head ... -->
-</head>
 
+    <style>
+        /* ============================================================
+           GLOBAL
+           ============================================================ */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html, body { height:100%; font-family:'Segoe UI',system-ui,sans-serif; background:#f0f2f5; }
+        #map { height:calc(100vh - 56px); width:100%; background:#e5e9f0; position:relative; }
 
+        /* ============================================================
+           NAVBAR
+           ============================================================ */
+        .navbar-custom {
+            background: linear-gradient(135deg,#0f2b24 0%,#1a4a3c 100%);
+            color:white; padding:8px 16px; box-shadow:0 2px 16px rgba(0,0,0,0.2);
+            position:sticky; top:0; z-index:1050; height:56px;
+            display:flex; align-items:center; justify-content:space-between; gap:8px;
+        }
+        .navbar-custom .brand { font-weight:700; font-size:1.1rem; }
+        .navbar-custom .brand i { margin-right:8px; color:#a7f3d0; }
+        .navbar-custom .badge-status {
+            background:#fbbf24; color:#0f2b24; padding:4px 14px; border-radius:30px;
+            font-size:0.7rem; font-weight:600;
+        }
+        .navbar-custom .menu-btn {
+            background:none; border:none; color:white; font-size:1.3rem;
+            cursor:pointer; padding:4px 8px; border-radius:8px; transition:0.2s;
+        }
+        .navbar-custom .menu-btn:hover { background:rgba(255,255,255,0.1); }
+        .navbar-custom .btn-outline-light {
+            border-color:rgba(255,255,255,0.3); padding:3px 10px; font-size:0.8rem;
+        }
+        .navbar-right { display:flex; align-items:center; gap:8px; }
+        .navbar-right .badge-gps {
+            background:rgba(26,115,232,0.2); color:#1a73e8; padding:4px 10px;
+            border-radius:30px; font-size:0.65rem; font-weight:600;
+        }
+        .gps-active { color:#1a73e8 !important; }
+
+        /* ============================================================
+           POINT TOOLBAR (styles kept as-is, not shown in snippet)
+           ============================================================ */
+        /* ... all other styles remain unchanged ... */
+
+        /* ============================================================
+           GPS FLOATING BUTTON – FIXED POSITION OVERRIDE
+           ============================================================ */
+        #gpsFloatingBtn {
+            position: fixed !important;
+            bottom: 130px !important;
+            right: 16px !important;
+            z-index: 999999 !important;
+            width: 70px !important;
+            height: 70px !important;
+            border-radius: 50% !important;
+            background: #0f172a !important;
+            color: white !important;
+            border: 4px solid #3b82f6 !important;
+            font-size: 32px !important;
+            cursor: pointer !important;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.3s ease !important;
+            user-select: none !important;
+        }
+        #gpsFloatingBtn:hover {
+            transform: scale(1.1);
+        }
+        #gpsFloatingBtn.gps-searching {
+            background: #f59e0b !important;
+            border-color: #f59e0b !important;
+        }
+        #gpsFloatingBtn.gps-active {
+            background: #22c55e !important;
+            border-color: #22c55e !important;
+        }
+        #gpsFloatingBtn.gps-error {
+            background: #ef4444 !important;
+            border-color: #ef4444 !important;
+        }
+        #gpsStatusBadge {
+            position: fixed !important;
+            bottom: 210px !important;
+            right: 20px !important;
+            z-index: 999998 !important;
+            background: rgba(0,0,0,0.8) !important;
+            color: #94a3b8 !important;
+            padding: 4px 14px !important;
+            border-radius: 20px !important;
+            font-size: 12px !important;
+            font-family: monospace !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            display: none !important;
+            pointer-events: none !important;
+        }
+        #gpsStatusBadge.active {
+            display: block !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -681,7 +831,10 @@
         <span class="brand"><i class="bi bi-map-fill"></i> GSSM_LUSP</span>
         <div class="navbar-right">
             <span class="badge-gps" id="gpsStatus" style="display:none;"><i class="bi bi-satellite-fill"></i> GPS</span>
-            <button class="menu-btn" id="gpsToggle" title="Toggle GPS Tracking"><i class="bi bi-satellite"></i></button>
+            <!-- VISIBLE GPS BUTTON (replaces the invisible satellite icon) -->
+            <button id="gpsNavBtn" onclick="toggleGPS()" style="background:#2563eb;color:white;border:none;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(37,99,235,0.3);">
+                📡 GPS
+            </button>
             <button class="menu-btn" id="pointPlotToggle" title="Point Plotting Tools"><i class="bi bi-geo-alt"></i></button>
             <button class="menu-btn" id="layersToggle" aria-label="Toggle layers"><i class="bi bi-layers"></i></button>
             <button class="menu-btn" id="menuToggle" aria-label="Toggle menu"><i class="bi bi-list"></i></button>
@@ -689,67 +842,28 @@
         </div>
     </nav>
 
-   <!-- ============================================================
-     MAP CONTAINER WITH GPS OVERLAY
-     ============================================================ -->
-<div id="mapContainer" style="position:relative; height:calc(100vh - 56px); width:100%; overflow:hidden;">
-    
-    <!-- MAP -->
-    <div id="map" style="height:100%; width:100%; background:#e5e9f0;"></div>
-    
-    <!-- GPS FLOATING BUTTON - BIG & VISIBLE -->
-    <button id="gpsFloatingBtn" 
-            onclick="toggleGPS()" 
-            title="Click to get your GPS location (or press G)"
-            style="
-                position: absolute;
-                bottom: 130px;
-                right: 16px;
-                z-index: 9999;
-                width: 64px;
-                height: 64px;
-                border-radius: 50%;
-                background: linear-gradient(145deg, #0f172a, #1a2a4a);
-                color: white;
-                border: 3px solid #3b82f6;
-                font-size: 30px;
-                cursor: pointer;
-                box-shadow: 0 6px 30px rgba(0,0,0,0.5), 0 0 0 0 rgba(59,130,246,0);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                user-select: none;
-                backdrop-filter: blur(4px);
-                background: rgba(15, 23, 42, 0.95);
-            "
-            onmouseenter="this.style.transform='scale(1.12)'; this.style.boxShadow='0 8px 40px rgba(0,0,0,0.6), 0 0 30px rgba(59,130,246,0.2)';"
-            onmouseleave="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 30px rgba(0,0,0,0.5)';">
+    <!-- ============================================================
+    MAP CONTAINER (now only the map)
+    ============================================================ -->
+    <div id="mapContainer" style="position:relative; height:calc(100vh - 56px); width:100%; overflow:hidden;">
+        <!-- MAP -->
+        <div id="map" style="height:100%; width:100%; background:#e5e9f0;"></div>
+    </div>
+
+    <!-- ============================================================
+    GPS FLOATING BUTTON – MOVED OUTSIDE CONTAINER, FIXED POSITION
+    ============================================================ -->
+    <button id="gpsFloatingBtn" onclick="toggleGPS()" title="Click to get your GPS location (or press G)">
         📡
     </button>
-    
-    <!-- GPS STATUS INDICATOR (small badge near button) -->
-    <div id="gpsStatusBadge" style="
-        position: absolute;
-        bottom: 200px;
-        right: 20px;
-        z-index: 9998;
-        background: rgba(0,0,0,0.8);
-        backdrop-filter: blur(8px);
-        color: #94a3b8;
-        padding: 4px 14px;
-        border-radius: 20px;
-        font-size: 0.6rem;
-        font-family: 'Courier New', monospace;
-        border: 1px solid rgba(255,255,255,0.1);
-        display: none;
-        letter-spacing: 0.5px;
-        transition: all 0.3s;
-        pointer-events: none;
-    ">
-        📡 GPS: OFF
-    </div>
-</div>
+
+    <!-- GPS STATUS BADGE -->
+    <div id="gpsStatusBadge">📡 GPS: OFF</div>
+
+    <!-- ============================================================
+    (The rest of your page – point toolbar, layers, scripts etc. –
+    goes here, unchanged.)
+    ============================================================ -->
     
     ============================================================
     GPS NAVIGATION INTERFACE
