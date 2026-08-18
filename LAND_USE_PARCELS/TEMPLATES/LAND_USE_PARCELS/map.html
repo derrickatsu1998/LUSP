@@ -662,6 +662,15 @@
                 position: relative;
                 background: #e5e9f0;
             }
+
+        /* Force floating GPS button visible */
+#gpsFloatingBtn {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 99999 !important;
+}
     </style>
 <head>
     <meta charset="UTF-8" />
@@ -841,6 +850,8 @@
             <a href="/logout" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i></a>
         </div>
     </nav>
+=======
+
 
     <!-- ============================================================
     MAP CONTAINER (now only the map)
