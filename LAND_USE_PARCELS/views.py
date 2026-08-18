@@ -151,66 +151,115 @@ def request_otp_view(request):
 # VERIFY OTP
 # ============================================================
 
-@ensure_csrf_cookie
-@require_http_methods(["GET", "POST"])
+# @ensure_csrf_cookie
+# @require_http_methods(["GET", "POST"])
+# def verify_otp_view(request):
+#     email = request.session.get("otp_email")
+
+#     if request.method == "GET":
+#         return render(request, "LAND_USE_PARCELS/verify_otp.html", {"email": email})
+
+#     if not email:
+#         return redirect("request_otp")
+
+#     code = request.POST.get("code", "").strip()
+#     code = "".join(char for char in code if char.isdigit())
+
+#     if len(code) != 6:
+#         return render(request, "LAND_USE_PARCELS/verify_otp.html", {
+#             "email": email,
+#             "error": "Please enter the complete 6-digit verification code.",
+#         })
+
+#     user = User.objects.filter(email__iexact=email).first()
+#     if user is None:
+#         return render(request, "LAND_USE_PARCELS/verify_otp.html", {
+#             "email": email,
+#             "error": "User account could not be found. Please request a new verification code.",
+#         })
+
+#     otp = OTPCode.objects.filter(user=user, is_used=False).order_by("-created_at").first()
+#     if otp is None:
+#         return render(request, "LAND_USE_PARCELS/verify_otp.html", {
+#             "email": email,
+#             "error": "No active verification code was found. Please request a new code.",
+#         })
+
+#     if str(otp.code).strip() != code:
+#         return render(request, "LAND_USE_PARCELS/verify_otp.html", {
+#             "email": email,
+#             "error": "Invalid verification code. Please enter the latest code sent to your email.",
+#         })
+
+#     if not otp.is_valid():
+#         otp.is_used = True
+#         otp.save(update_fields=["is_used"])
+#         return render(request, "LAND_USE_PARCELS/verify_otp.html", {
+#             "email": email,
+#             "error": "This verification code has expired. Please request a new code.",
+#         })
+
+#     otp.is_used = True
+#     otp.save(update_fields=["is_used"])
+
+#     if hasattr(user, "is_active") and not user.is_active:
+#         user.is_active = True
+#         user.save(update_fields=["is_active"])
+
+#     login(request, user)
+#     request.session.pop("otp_email", None)
+#     request.session.modified = True
+
+#     return redirect("map_view")
+
+
+
+
+
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.models import User
+import random
+import string
+
 def verify_otp_view(request):
-    email = request.session.get("otp_email")
+    if request.method == 'POST':
+        # Combine the six individual OTP fields
+        entered_otp = ''.join([request.POST.get(f'otp{i}', '') for i in range(1, 7)])
+        stored_otp = request.session.get('otp')
+        email = request.session.get('email')
 
-    if request.method == "GET":
-        return render(request, "LAND_USE_PARCELS/verify_otp.html", {"email": email})
+        # Debug: print to Render logs
+        print(f"Entered OTP: {entered_otp}, Stored OTP: {stored_otp}, Email: {email}")
 
-    if not email:
-        return redirect("request_otp")
+        if not entered_otp:
+            messages.error(request, "Please enter the 6-digit code.")
+            return render(request, 'LAND_USE_PARCELS/verify_otp.html')
 
-    code = request.POST.get("code", "").strip()
-    code = "".join(char for char in code if char.isdigit())
+        if not stored_otp:
+            messages.error(request, "OTP expired or not found. Please request a new one.")
+            return redirect('request_otp')
 
-    if len(code) != 6:
-        return render(request, "LAND_USE_PARCELS/verify_otp.html", {
-            "email": email,
-            "error": "Please enter the complete 6-digit verification code.",
-        })
+        if entered_otp == stored_otp:
+            # OTP is valid – log the user in
+            try:
+                user = User.objects.get(email=email)
+                login(request, user)
+                # Clear session after successful login
+                del request.session['otp']
+                del request.session['email']
+                messages.success(request, "OTP verified successfully!")
+                return redirect('map_view')
+            except User.DoesNotExist:
+                messages.error(request, "User not found. Please request OTP again.")
+                return redirect('request_otp')
+        else:
+            messages.error(request, "Invalid OTP. Please try again.")
+            return render(request, 'LAND_USE_PARCELS/verify_otp.html')
 
-    user = User.objects.filter(email__iexact=email).first()
-    if user is None:
-        return render(request, "LAND_USE_PARCELS/verify_otp.html", {
-            "email": email,
-            "error": "User account could not be found. Please request a new verification code.",
-        })
-
-    otp = OTPCode.objects.filter(user=user, is_used=False).order_by("-created_at").first()
-    if otp is None:
-        return render(request, "LAND_USE_PARCELS/verify_otp.html", {
-            "email": email,
-            "error": "No active verification code was found. Please request a new code.",
-        })
-
-    if str(otp.code).strip() != code:
-        return render(request, "LAND_USE_PARCELS/verify_otp.html", {
-            "email": email,
-            "error": "Invalid verification code. Please enter the latest code sent to your email.",
-        })
-
-    if not otp.is_valid():
-        otp.is_used = True
-        otp.save(update_fields=["is_used"])
-        return render(request, "LAND_USE_PARCELS/verify_otp.html", {
-            "email": email,
-            "error": "This verification code has expired. Please request a new code.",
-        })
-
-    otp.is_used = True
-    otp.save(update_fields=["is_used"])
-
-    if hasattr(user, "is_active") and not user.is_active:
-        user.is_active = True
-        user.save(update_fields=["is_active"])
-
-    login(request, user)
-    request.session.pop("otp_email", None)
-    request.session.modified = True
-
-    return redirect("map_view")
+    return render(request, 'LAND_USE_PARCELS/verify_otp.html')
 
 # ============================================================
 # LOGOUT
