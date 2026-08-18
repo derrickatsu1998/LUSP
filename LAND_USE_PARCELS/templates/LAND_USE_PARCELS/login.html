@@ -7,9 +7,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <style>
-        /* Full‑page background image */
         body {
-            background: url('https://th.bing.com/th/id/R.cfc15eb8577e8925dee2c291006c6d03?rik=yds0ogCmFLZBuw&riu=http%3a%2f%2fwww.geoinfinity.in%2fcap_planning.jpg&ehk=Nhy5A5nvTpsEvYa5ugDrerWA0UB2A8dyZWaxeTfImo4%3d&risl=&pid=ImgRaw&r=0') no-repeat center center fixed;
+            background: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600') no-repeat center center fixed;
             background-size: cover;
             min-height: 100vh;
             display: flex;
@@ -19,8 +18,6 @@
             margin: 0;
             padding: 20px;
         }
-
-        /* Dark overlay to improve readability */
         body::before {
             content: '';
             position: fixed;
@@ -31,7 +28,6 @@
             background: rgba(0, 0, 0, 0.5);
             z-index: 0;
         }
-
         .login-card {
             position: relative;
             z-index: 1;
@@ -44,14 +40,20 @@
             width: 100%;
             border: 1px solid rgba(255,255,255,0.2);
         }
-
         .login-card .brand {
             text-align: center;
             margin-bottom: 28px;
         }
         .login-card .brand i {
-            font-size: 2.5rem;
+            font-size: 3rem;
             color: #0f2b24;
+            display: inline-block;
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+        @keyframes floatIcon {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+            100% { transform: translateY(0); }
         }
         .login-card .brand h1 {
             font-size: 1.5rem;
@@ -63,12 +65,10 @@
             color: #4a5568;
             font-size: 0.85rem;
         }
-
         .form-control:focus {
             border-color: #0f2b24;
             box-shadow: 0 0 0 3px rgba(15,43,36,0.15);
         }
-
         .btn-primary {
             background: #0f2b24;
             border: none;
@@ -81,11 +81,9 @@
         .btn-primary:hover {
             background: #1a4a3c;
         }
-
         .alert {
             border-radius: 12px;
         }
-
         .footer-text {
             text-align: center;
             margin-top: 16px;
@@ -127,7 +125,7 @@
         </form>
 
         <div class="footer-text">
-            &copy; BetaCode Software Solutions And  Consultancy &bull;           All rights reserved 
+            &copy; 2026 GSSM_LUSP &bull; All rights reserved
         </div>
     </div>
 
