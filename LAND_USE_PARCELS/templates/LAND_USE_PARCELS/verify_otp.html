@@ -46,7 +46,6 @@
             color: #0f2b24;
             margin-bottom: 8px;
         }
-        /* Globe spin animation */
         .icon .bi-globe {
             display: inline-block;
             animation: spinGlobe 10s linear infinite;
@@ -126,7 +125,6 @@
             font-size: 0.75rem;
             color: #718096;
         }
-        /* Toast container */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -143,9 +141,7 @@
             align-items: center;
             gap: 10px;
         }
-        .toast .toast-body i {
-            font-size: 1.5rem;
-        }
+        .toast .toast-body i { font-size: 1.5rem; }
         .toast-success .toast-body i { color: #198754; }
         .toast-error .toast-body i { color: #dc3545; }
         .toast-warning .toast-body i { color: #ffc107; }
@@ -154,7 +150,6 @@
 </head>
 <body>
 
-    <!-- Toast container for Django messages -->
     <div class="toast-container" id="toastContainer">
         {% if messages %}
             {% for message in messages %}
@@ -171,13 +166,11 @@
 
     <div class="otp-card">
         <div class="icon">
-            <!-- Globe icon instead of lock -->
             <i class="bi bi-globe"></i>
         </div>
         <h2>Verify OTP</h2>
         <p class="sub">Enter the 6‑digit code sent to your email</p>
 
-        <!-- Static alert for frontend validation errors (hidden by default) -->
         <div id="validationAlert" class="alert alert-danger d-none" role="alert">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>
             <span id="validationMessage">Please enter a valid 6-digit code.</span>
@@ -207,119 +200,140 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        (function() {
-            const inputs = document.querySelectorAll('.otp-input');
-            const form = document.getElementById('otpForm');
-            const hiddenInput = document.getElementById('otpHidden');
-            const verifyBtn = document.getElementById('verifyBtn');
-            const validationAlert = document.getElementById('validationAlert');
-            const validationMessage = document.getElementById('validationMessage');
+    (function() {
+        const inputs = document.querySelectorAll('.otp-input');
+        const form = document.getElementById('otpForm');
+        const hiddenInput = document.getElementById('otpHidden');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const validationAlert = document.getElementById('validationAlert');
+        const validationMessage = document.getElementById('validationMessage');
 
-            function clearInvalidState() {
-                inputs.forEach(inp => inp.classList.remove('is-invalid'));
-                validationAlert.classList.add('d-none');
+        // Helper: convert inputs to array
+        function getInputsArray() {
+            return Array.from(inputs);
+        }
+
+        function clearInvalidState() {
+            inputs.forEach(inp => inp.classList.remove('is-invalid'));
+            validationAlert.classList.add('d-none');
+        }
+
+        function showValidationError(msg) {
+            validationMessage.textContent = msg || 'Please enter a valid 6-digit code.';
+            validationAlert.classList.remove('d-none');
+            inputs.forEach(inp => inp.classList.add('is-invalid'));
+            for (let inp of inputs) {
+                if (inp.value.length === 0) { inp.focus(); break; }
             }
+        }
 
-            function showValidationError(msg) {
-                validationMessage.textContent = msg || 'Please enter a valid 6-digit code.';
-                validationAlert.classList.remove('d-none');
-                inputs.forEach(inp => inp.classList.add('is-invalid'));
-                for (let inp of inputs) {
-                    if (inp.value.length === 0) { inp.focus(); break; }
-                }
+        function updateOtp() {
+            const arr = getInputsArray();
+            const otp = arr.map(i => i.value).join('');
+            hiddenInput.value = otp;
+            // Use array methods safely
+            if (/^\d{6}$/.test(otp)) {
+                clearInvalidState();
             }
-
-            function updateOtp() {
-                const otp = Array.from(inputs).map(i => i.value).join('');
-                hiddenInput.value = otp;
-                if (/^\d{6}$/.test(otp)) {
-                    clearInvalidState();
-                }
-                const allFilled = inputs.every(i => i.value.length === 1);
-                verifyBtn.disabled = !allFilled;
-                if (allFilled && !validationAlert.classList.contains('d-none')) {
-                    clearInvalidState();
-                }
+            const allFilled = arr.every(i => i.value.length === 1);
+            verifyBtn.disabled = !allFilled;
+            if (allFilled && !validationAlert.classList.contains('d-none')) {
+                clearInvalidState();
             }
+        }
 
-            inputs.forEach((input, idx, arr) => {
-                input.addEventListener('input', function(e) {
-                    this.value = this.value.replace(/\D/g, '');
-                    if (this.value.length > 1) {
-                        this.value = this.value.slice(0, 1);
+        // Attach events
+        inputs.forEach((input, idx, arr) => {
+            input.addEventListener('input', function(e) {
+                this.value = this.value.replace(/\D/g, '');
+                if (this.value.length > 1) {
+                    this.value = this.value.slice(0, 1);
+                }
+                if (this.value.length === 1 && idx < arr.length - 1) {
+                    arr[idx + 1].focus();
+                }
+                updateOtp();
+                clearInvalidState();
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && this.value.length === 0 && idx > 0) {
+                    arr[idx - 1].focus();
+                }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    form.dispatchEvent(new Event('submit'));
+                }
+            });
+
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pasted = (e.clipboardData || window.clipboardData).getData('text');
+                const digits = pasted.replace(/\D/g, '').slice(0, 6);
+                if (digits.length > 0) {
+                    for (let i = 0; i < digits.length && i < arr.length; i++) {
+                        arr[i].value = digits[i];
                     }
-                    if (this.value.length === 1 && idx < arr.length - 1) {
-                        arr[idx + 1].focus();
+                    const nextEmpty = Array.from(arr).findIndex(inp => inp.value.length === 0);
+                    if (nextEmpty !== -1) {
+                        arr[nextEmpty].focus();
+                    } else {
+                        arr[arr.length - 1].focus();
                     }
                     updateOtp();
                     clearInvalidState();
-                });
-
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Backspace' && this.value.length === 0 && idx > 0) {
-                        arr[idx - 1].focus();
-                    }
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        form.dispatchEvent(new Event('submit'));
-                    }
-                });
-
-                input.addEventListener('paste', function(e) {
-                    e.preventDefault();
-                    const pasted = (e.clipboardData || window.clipboardData).getData('text');
-                    const digits = pasted.replace(/\D/g, '').slice(0, 6);
-                    if (digits.length > 0) {
-                        for (let i = 0; i < digits.length && i < arr.length; i++) {
-                            arr[i].value = digits[i];
-                        }
-                        const nextEmpty = Array.from(arr).findIndex(inp => inp.value.length === 0);
-                        if (nextEmpty !== -1) {
-                            arr[nextEmpty].focus();
-                        } else {
-                            arr[arr.length - 1].focus();
-                        }
-                        updateOtp();
-                        clearInvalidState();
-                    }
-                });
-            });
-
-            form.addEventListener('submit', function(e) {
-                const otp = hiddenInput.value;
-                if (!/^\d{6}$/.test(otp)) {
-                    e.preventDefault();
-                    showValidationError('Please enter exactly 6 digits.');
-                    return;
                 }
-                clearInvalidState();
-                verifyBtn.disabled = true;
-                verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Verifying...';
-                setTimeout(() => {
-                    verifyBtn.disabled = false;
-                    verifyBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i> Verify OTP';
-                }, 10000);
             });
+        });
 
-            inputs.forEach((input, idx, arr) => {
-                input.addEventListener('input', function() {
-                    const allFilled = arr.every(i => i.value.length === 1);
-                    if (allFilled && /^\d{6}$/.test(hiddenInput.value)) {
-                        clearInvalidState();
-                        setTimeout(() => {
-                            form.dispatchEvent(new Event('submit'));
-                        }, 400);
+        // Form submission validation
+        form.addEventListener('submit', function(e) {
+            const otp = hiddenInput.value;
+            if (!/^\d{6}$/.test(otp)) {
+                e.preventDefault();
+                showValidationError('Please enter exactly 6 digits.');
+                return;
+            }
+            clearInvalidState();
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Verifying...';
+            setTimeout(() => {
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i> Verify OTP';
+            }, 10000);
+        });
+
+        // Auto-submit with debounce
+        let autoSubmitTimeout = null;
+        inputs.forEach((input, idx, arr) => {
+            input.addEventListener('input', function() {
+                const arrInputs = Array.from(arr);
+                const allFilled = arrInputs.every(i => i.value.length === 1);
+                if (allFilled && /^\d{6}$/.test(hiddenInput.value)) {
+                    clearInvalidState();
+                    if (autoSubmitTimeout) {
+                        clearTimeout(autoSubmitTimeout);
                     }
-                });
+                    autoSubmitTimeout = setTimeout(() => {
+                        form.dispatchEvent(new Event('submit'));
+                        autoSubmitTimeout = null;
+                    }, 400);
+                } else {
+                    if (autoSubmitTimeout) {
+                        clearTimeout(autoSubmitTimeout);
+                        autoSubmitTimeout = null;
+                    }
+                }
             });
+        });
 
-            updateOtp();
-            document.addEventListener('DOMContentLoaded', function() {
-                clearInvalidState();
-            });
-        })();
-    </script>
+        // Initial update
+        updateOtp();
+        document.addEventListener('DOMContentLoaded', function() {
+            clearInvalidState();
+        });
+    })();
+</script>
 </body>
 </html>
