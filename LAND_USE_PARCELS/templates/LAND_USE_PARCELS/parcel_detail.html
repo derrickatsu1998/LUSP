@@ -36,7 +36,8 @@
     <nav class="navbar-custom">
         <span class="brand"><i class="bi bi-map-fill"></i> GSSM_LUSP</span>
         <div>
-            <a href="{% url 'map' %}" class="btn btn-sm btn-outline-light"><i class="bi bi-arrow-left"></i> Back to Map</a>
+            <!-- FIXED: Changed 'map' to 'map_view' -->
+            <a href="{% url 'map_view' %}" class="btn btn-sm btn-outline-light"><i class="bi bi-arrow-left"></i> Back to Map</a>
             <a href="/logout" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i></a>
         </div>
     </nav>
