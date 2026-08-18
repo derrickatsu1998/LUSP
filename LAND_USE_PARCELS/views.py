@@ -226,35 +226,35 @@ import string
 
 def verify_otp_view(request):
     if request.method == 'POST':
-        # Combine the six individual OTP fields
         entered_otp = ''.join([request.POST.get(f'otp{i}', '') for i in range(1, 7)])
         stored_otp = request.session.get('otp')
         email = request.session.get('email')
 
-        # Debug: print to Render logs
-        print(f"Entered OTP: {entered_otp}, Stored OTP: {stored_otp}, Email: {email}")
+        print(f"Entered: {entered_otp}, Stored: {stored_otp}, Email: {email}")
 
         if not entered_otp:
             messages.error(request, "Please enter the 6-digit code.")
             return render(request, 'LAND_USE_PARCELS/verify_otp.html')
 
         if not stored_otp:
-            messages.error(request, "OTP expired or not found. Please request a new one.")
+            messages.error(request, "OTP expired. Request a new one.")
             return redirect('request_otp')
 
         if entered_otp == stored_otp:
-            # OTP is valid – log the user in
             try:
                 user = User.objects.get(email=email)
                 login(request, user)
-                # Clear session after successful login
+                # Clear session
                 del request.session['otp']
                 del request.session['email']
                 messages.success(request, "OTP verified successfully!")
-                return redirect('map_view')
+
+                # Test with hardcoded redirect
+                return redirect('/map/')   # <-- Change back to redirect('map_view') later
+
             except User.DoesNotExist:
-                messages.error(request, "User not found. Please request OTP again.")
-                return redirect('request_otp')
+                messages.error(request, f"User with email {email} not found.")
+                return render(request, 'LAND_USE_PARCELS/verify_otp.html')
         else:
             messages.error(request, "Invalid OTP. Please try again.")
             return render(request, 'LAND_USE_PARCELS/verify_otp.html')
