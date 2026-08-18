@@ -42,9 +42,18 @@
         }
         .otp-card .icon {
             text-align: center;
-            font-size: 3rem;
+            font-size: 4rem;
             color: #0f2b24;
             margin-bottom: 8px;
+        }
+        /* Globe spin animation */
+        .icon .bi-globe {
+            display: inline-block;
+            animation: spinGlobe 10s linear infinite;
+        }
+        @keyframes spinGlobe {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         .otp-card h2 {
             text-align: center;
@@ -161,7 +170,10 @@
     </div>
 
     <div class="otp-card">
-        <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
+        <div class="icon">
+            <!-- Globe icon instead of lock -->
+            <i class="bi bi-globe"></i>
+        </div>
         <h2>Verify OTP</h2>
         <p class="sub">Enter the 6‑digit code sent to your email</p>
 
@@ -205,43 +217,35 @@
             const validationAlert = document.getElementById('validationAlert');
             const validationMessage = document.getElementById('validationMessage');
 
-            // Helper to remove invalid styling
             function clearInvalidState() {
                 inputs.forEach(inp => inp.classList.remove('is-invalid'));
                 validationAlert.classList.add('d-none');
             }
 
-            // Helper to show validation error
             function showValidationError(msg) {
                 validationMessage.textContent = msg || 'Please enter a valid 6-digit code.';
                 validationAlert.classList.remove('d-none');
                 inputs.forEach(inp => inp.classList.add('is-invalid'));
-                // Focus the first empty or invalid input
                 for (let inp of inputs) {
                     if (inp.value.length === 0) { inp.focus(); break; }
                 }
             }
 
-            // Update hidden field and check validity
             function updateOtp() {
                 const otp = Array.from(inputs).map(i => i.value).join('');
                 hiddenInput.value = otp;
-                // Clear invalid state if all digits are numbers
                 if (/^\d{6}$/.test(otp)) {
                     clearInvalidState();
                 }
-                // Enable/disable button based on completion
                 const allFilled = inputs.every(i => i.value.length === 1);
                 verifyBtn.disabled = !allFilled;
                 if (allFilled && !validationAlert.classList.contains('d-none')) {
-                    clearInvalidState(); // remove error if user filled all fields correctly
+                    clearInvalidState();
                 }
             }
 
-            // Auto-advance, allow only digits, and handle backspace
             inputs.forEach((input, idx, arr) => {
                 input.addEventListener('input', function(e) {
-                    // Allow only digits
                     this.value = this.value.replace(/\D/g, '');
                     if (this.value.length > 1) {
                         this.value = this.value.slice(0, 1);
@@ -250,7 +254,7 @@
                         arr[idx + 1].focus();
                     }
                     updateOtp();
-                    clearInvalidState(); // clear error as user types
+                    clearInvalidState();
                 });
 
                 input.addEventListener('keydown', function(e) {
@@ -263,7 +267,6 @@
                     }
                 });
 
-                // On paste, fill all inputs from clipboard
                 input.addEventListener('paste', function(e) {
                     e.preventDefault();
                     const pasted = (e.clipboardData || window.clipboardData).getData('text');
@@ -272,7 +275,6 @@
                         for (let i = 0; i < digits.length && i < arr.length; i++) {
                             arr[i].value = digits[i];
                         }
-                        // Move focus to the next empty field or the last filled
                         const nextEmpty = Array.from(arr).findIndex(inp => inp.value.length === 0);
                         if (nextEmpty !== -1) {
                             arr[nextEmpty].focus();
@@ -285,7 +287,6 @@
                 });
             });
 
-            // Form submission validation
             form.addEventListener('submit', function(e) {
                 const otp = hiddenInput.value;
                 if (!/^\d{6}$/.test(otp)) {
@@ -293,26 +294,20 @@
                     showValidationError('Please enter exactly 6 digits.');
                     return;
                 }
-                // Clear any previous errors
                 clearInvalidState();
-                // Disable button to prevent double submission
                 verifyBtn.disabled = true;
                 verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Verifying...';
-                // Re-enable after a short timeout in case of network issues (but form will submit)
                 setTimeout(() => {
                     verifyBtn.disabled = false;
                     verifyBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i> Verify OTP';
                 }, 10000);
             });
 
-            // Auto-submit when all 6 digits are filled (with a small delay)
             inputs.forEach((input, idx, arr) => {
                 input.addEventListener('input', function() {
                     const allFilled = arr.every(i => i.value.length === 1);
                     if (allFilled && /^\d{6}$/.test(hiddenInput.value)) {
-                        // Clear any previous error before auto-submit
                         clearInvalidState();
-                        // Small delay to let user see the last digit before submission
                         setTimeout(() => {
                             form.dispatchEvent(new Event('submit'));
                         }, 400);
@@ -320,15 +315,8 @@
                 });
             });
 
-            // Ensure the hidden field gets updated on page load (if values are pre-filled)
             updateOtp();
-
-            // If there are Django messages, they will be shown as toasts automatically.
-            // We also want to clear any frontend validation alerts if the user tries again.
             document.addEventListener('DOMContentLoaded', function() {
-                // If there are messages, they are already rendered as toasts.
-                // Any error from backend (invalid OTP) will be shown as a toast.
-                // We can also clear any frontend error state if the user reloads.
                 clearInvalidState();
             });
         })();
