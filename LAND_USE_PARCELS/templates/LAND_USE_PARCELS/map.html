@@ -282,6 +282,22 @@
             font-size:0.55rem; background:#e2e8f0; color:#64748b; padding:0px 6px; border-radius:10px; margin-left:auto;
         }
 
+                /* Layers panel - mobile touch improvements */
+        #layersPanel {
+            pointer-events: auto !important;
+        }
+        #layersPanel .layer-item {
+            pointer-events: auto !important;
+            padding: 12px 8px;
+            min-height: 44px;
+            font-size: 1rem;
+            touch-action: manipulation;
+        }
+        #layersPanel .layer-item .radio {
+            width: 20px;
+            height: 20px;
+        }
+
         /* ============================================================
            SLIDE-OUT MENU (SETTINGS)
            ============================================================ */
@@ -916,6 +932,71 @@
     }
 }
 
+/* Search suggestions */
+#searchSuggestions {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    z-index: 9999;
+    margin-top: 4px;
+}
+#searchSuggestions .suggestion-item {
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s;
+    color: #1e293b;
+}
+#searchSuggestions .suggestion-item:hover {
+    background: #f1f5f9;
+}
+#searchSuggestions .suggestion-item:last-child {
+    border-bottom: none;
+}
+#searchSuggestions .suggestion-item .highlight {
+    font-weight: 600;
+    color: #0f2b24;
+}
+/* Clear button */
+#clearSearchBtn {
+    display: none;
+    position: absolute;
+    right: 32px;
+    background: none;
+    border: none;
+    color: #6c757d;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0 4px;
+}
+#clearSearchBtn:hover {
+    color: #0f2b24;
+}
+
+@media (max-width: 768px) {
+    #searchInput {
+        width: 100px !important;
+        font-size: 0.75rem !important;
+        padding: 2px 24px 2px 8px !important;
+    }
+    #searchInput:focus {
+        width: 140px !important;
+    }
+    #searchSuggestions {
+        max-height: 150px;
+        font-size: 0.8rem;
+        width: 100%;
+        left: 0;
+        right: 0;
+    }
+    #clearSearchBtn {
+        right: 28px;
+    }
+}
     </style>
 </head>
 <body>
@@ -928,12 +1009,15 @@
         <div class="navbar-right">
             <span class="badge-gps" id="gpsStatus" style="display:none;"><i class="bi bi-satellite-fill"></i> GPS</span>
             <!-- Search Form -->
-            <form id="searchForm" class="d-flex align-items-center" style="gap:4px; margin-right:4px;" onsubmit="searchLocation(event)">
-                <input type="text" id="searchInput" placeholder="Search places..." style="border:none; border-radius:20px; padding:4px 12px; font-size:0.85rem; width:140px; background:rgba(255,255,255,0.9); color:#0f2b24; outline:none; transition:width 0.3s;">
-                <button type="submit" style="background:none; border:none; color:white; font-size:1.2rem; cursor:pointer; padding:0 4px;">
-                    <i class="bi bi-search"></i>
-                </button>
-            </form>
+                <form id="searchForm" class="d-flex align-items-center position-relative" style="gap:4px; margin-right:4px;" onsubmit="searchLocation(event)">
+                    <input type="text" id="searchInput" placeholder="Search places..." 
+                        style="border:none; border-radius:20px; padding:4px 30px 4px 12px; font-size:0.85rem; width:140px; background:rgba(255,255,255,0.9); color:#0f2b24; outline:none; transition:width 0.3s;">
+                    <button type="button" id="clearSearchBtn" style="display:none; position:absolute; right:30px; background:none; border:none; color:#6c757d; font-size:0.9rem; cursor:pointer; padding:0 4px;">✕</button>
+                    <button type="submit" style="background:none; border:none; color:white; font-size:1.2rem; cursor:pointer; padding:0 4px;">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <div id="searchSuggestions" style="position:absolute; top:100%; left:0; right:0; background:white; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.15); max-height:200px; overflow-y:auto; display:none; z-index:9999; margin-top:4px;"></div>
+                </form>
             <!-- GPS Button (Visible) -->
             <button id="gpsNavBtn" onclick="toggleGPS()" style="background:#2563eb;color:white;border:none;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(37,99,235,0.3);">
                 📡 GPS
@@ -1927,16 +2011,27 @@
         // ============================================================
         // 10. LAYERS PANEL
         // ============================================================
+        // ============================================================
+// 10. LAYERS PANEL
+// ============================================================
         $('#layersToggle').on('click', function(e) {
             e.stopPropagation();
             $('#layersPanel').toggle();
         });
+
         $(document).on('click', function(e) {
+            // Prevent closing if clicking on a layer item
+            if ($(e.target).closest('.layer-item').length) return;
+            // Close if clicking outside the panel and outside the toggle button
             if (!$(e.target).closest('#layersPanel').length && !$(e.target).closest('#layersToggle').length) {
                 $('#layersPanel').hide();
             }
         });
-        $('.layer-item').on('click', function() {
+
+        // Layer click handler – works on both desktop and mobile
+        $(document).on('click touchstart', '.layer-item', function(e) {
+            e.preventDefault();
+            e.stopPropagation();   // ensures the document click doesn't close the panel
             const layer = $(this).data('layer');
             $('.layer-item .radio').removeClass('active');
             $(this).find('.radio').addClass('active');
@@ -1944,9 +2039,9 @@
             currentLayer = baseLayers[layer] || baseLayers['osm'];
             currentLayer.addTo(map);
             $('#layersPanel').hide();
+            $('#layersPanel').removeClass('open'); // if you use mobile bottom-sheet class
             showToast(`📍 Switched to ${$(this).text().trim()}`, 'info');
         });
-
         // ============================================================
         // 11. SLIDE-OUT MENU (SETTINGS)
         // ============================================================
@@ -4803,45 +4898,150 @@
         // ============================================================
         // SEARCH LOCATION (SINGLE DEFINITION)
         // ============================================================
-        const geocoder = L.Control.Geocoder.nominatim({
-            geocodingQueryParams: {
-                limit: 5,
-                countrycodes: 'gh'
-            }
-        });
+        // ============================================================
+// ENHANCED SEARCH WITH SUGGESTIONS
+// ============================================================
+            const searchInput = document.getElementById('searchInput');
+            const searchSuggestions = document.getElementById('searchSuggestions');
+            const clearBtn = document.getElementById('clearSearchBtn');
+            let searchTimeout = null;
+            let currentQuery = '';
 
-        function searchLocation(event) {
-            event.preventDefault();
-            const query = document.getElementById('searchInput').value.trim();
-            if (!query) return;
-
-            showToast('🔍 Searching for "' + query + '"...', 'info');
-
-            geocoder.geocode(query, function(results) {
-                if (!results || results.length === 0) {
-                    showToast('❌ No results found for "' + query + '"', 'danger');
-                    return;
+            // Create a geocoder instance (Nominatim)
+            const geocoder = L.Control.Geocoder.nominatim({
+                geocodingQueryParams: {
+                    limit: 5,
+                    countrycodes: 'gh'  // restrict to Ghana – remove if you want worldwide
                 }
-                const result = results[0];
-                const lat = result.center.lat;
-                const lng = result.center.lng;
-                const name = result.name || query;
+            });
 
-                map.flyTo([lat, lng], 16, { duration: 1.5 });
+            // Show/hide clear button
+            searchInput.addEventListener('input', function() {
+                const val = this.value.trim();
+                clearBtn.style.display = val ? 'block' : 'none';
+                if (val.length >= 2) {
+                    fetchSuggestions(val);
+                } else {
+                    searchSuggestions.style.display = 'none';
+                }
+            });
 
+            // Fetch suggestions
+            function fetchSuggestions(query) {
+                if (searchTimeout) clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    geocoder.geocode(query, function(results) {
+                        if (!results || results.length === 0) {
+                            searchSuggestions.style.display = 'none';
+                            return;
+                        }
+                        // Build suggestions list
+                        let html = '';
+                        results.forEach((r, idx) => {
+                            const name = r.name || query;
+                            const parts = name.split(',').map(p => p.trim());
+                            const main = parts[0] || name;
+                            const extra = parts.slice(1).join(', ');
+                            html += `<div class="suggestion-item" data-lat="${r.center.lat}" data-lng="${r.center.lng}" data-name="${name}">
+                                        <strong>${main}</strong> ${extra ? '<span style="color:#94a3b8;font-size:0.75rem;">' + extra + '</span>' : ''}
+                                    </div>`;
+                        });
+                        searchSuggestions.innerHTML = html;
+                        searchSuggestions.style.display = 'block';
+
+                        // Attach click event to suggestions
+                        document.querySelectorAll('.suggestion-item').forEach(el => {
+                            el.addEventListener('mousedown', function(e) {
+                                e.preventDefault(); // prevent blur
+                                const lat = parseFloat(this.dataset.lat);
+                                const lng = parseFloat(this.dataset.lng);
+                                const name = this.dataset.name;
+                                searchInput.value = name;
+                                searchSuggestions.style.display = 'none';
+                                flyToLocation(lat, lng, name);
+                            });
+                            // Touch support
+                            el.addEventListener('touchstart', function(e) {
+                                const lat = parseFloat(this.dataset.lat);
+                                const lng = parseFloat(this.dataset.lng);
+                                const name = this.dataset.name;
+                                searchInput.value = name;
+                                searchSuggestions.style.display = 'none';
+                                flyToLocation(lat, lng, name);
+                            });
+                        });
+                    });
+                }, 300);
+            }
+
+            // Clear button
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                this.style.display = 'none';
+                searchSuggestions.style.display = 'none';
+                searchInput.focus();
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('#searchForm')) {
+                    searchSuggestions.style.display = 'none';
+                }
+            });
+
+            // Main search function (form submit)
+            function searchLocation(event) {
+                event.preventDefault();
+                const query = searchInput.value.trim();
+                if (!query) return;
+                // Check if it's a parcel ID (pattern: alphanumeric with maybe dash)
+                if (/^[A-Za-z0-9\-_]+$/.test(query)) {
+                    // Try to find a parcel by ID on the map (if you have parcel layers)
+                    // For now, treat as a place search
+                    // You could extend this to search in your own data.
+                }
+                // Geocode the query
+                showToast('🔍 Searching for "' + query + '"...', 'info');
+                geocoder.geocode(query, function(results) {
+                    if (!results || results.length === 0) {
+                        showToast('❌ No results found for "' + query + '"', 'danger');
+                        searchSuggestions.style.display = 'none';
+                        return;
+                    }
+                    const result = results[0];
+                    flyToLocation(result.center.lat, result.center.lng, result.name || query);
+                    searchSuggestions.style.display = 'none';
+                });
+            }
+
+            // Fly to a location and add a temporary marker
+            function flyToLocation(lat, lng, name) {
+                // Smooth fly
+                map.flyTo([lat, lng], 16, {
+                    duration: 1.5,
+                    easeLinearity: 0.25
+                });
+
+                // Temporary marker
                 const marker = L.marker([lat, lng], {
                     icon: L.divIcon({
                         className: 'search-marker',
-                        html: '<div style="background:#f59e0b;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 6px rgba(245,158,11,0.4);"></div>',
-                        iconSize: [20,20],
-                        iconAnchor: [10,10]
+                        html: `<div style="background:#f59e0b;width:22px;height:22px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 6px rgba(245,158,11,0.4);"></div>`,
+                        iconSize: [22,22],
+                        iconAnchor: [11,11]
                     })
                 }).addTo(map);
-                setTimeout(() => map.removeLayer(marker), 5000);
 
-                showToast('📍 Found: ' + name, 'success');
-            });
-        }
+                // Bind popup
+                marker.bindPopup(`<strong>📍 ${name}</strong>`).openPopup();
+
+                // Remove after 6 seconds
+                setTimeout(() => {
+                    map.removeLayer(marker);
+                }, 6000);
+
+                showToast(`📍 Found: ${name}`, 'success');
+            }
 
         // ---- MOBILE TOGGLES ----
 document.addEventListener('DOMContentLoaded', function() {
