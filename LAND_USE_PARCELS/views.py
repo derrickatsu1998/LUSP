@@ -171,12 +171,16 @@ def request_otp_view(request):
 
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login
 from django.contrib.auth.models import User
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_http_methods
 import logging
 
 logger = logging.getLogger(__name__)
 
+@ensure_csrf_cookie
+@require_http_methods(["GET", "POST"])
 def verify_otp_view(request):
     if request.method == 'POST':
         # Combine the six OTP fields
@@ -184,34 +188,38 @@ def verify_otp_view(request):
         stored_otp = request.session.get('otp')
         email = request.session.get('email')
 
-        # Log everything for debugging
+        # Debug logging – check Render logs
         logger.info(f"Entered: {entered_otp}, Stored: {stored_otp}, Email: {email}")
 
-        # Validation: no OTP entered
+        # Validate OTP
         if not entered_otp:
             messages.error(request, "Please enter the 6-digit code.")
             return render(request, 'LAND_USE_PARCELS/verify_otp.html')
 
-        # Validation: OTP expired
         if not stored_otp:
-            messages.error(request, "OTP expired. Please request a new one.")
+            messages.error(request, "OTP expired. Request a new one.")
             return redirect('request_otp')
 
         # OTP matches
         if entered_otp == stored_otp:
             try:
+                # Find the user
                 user = User.objects.get(email=email)
+                # Log the user in
                 login(request, user)
                 # Clear session
                 request.session.pop('otp', None)
                 request.session.pop('email', None)
                 messages.success(request, "OTP verified successfully!")
 
-                # Redirect to map (hardcoded path as fallback)
-                return redirect('/map/')
+                # Redirect to map – both options work
+                # Option A: Use named URL (ensure 'map_view' exists in urls.py)
+                return redirect('map_view')
+                # Option B: Use hardcoded path (fallback)
+                # return redirect('/map/')
 
             except User.DoesNotExist:
-                messages.error(request, f"User with email '{email}' not found. Please request OTP again.")
+                messages.error(request, f"User with email '{email}' not found. Please sign up first.")
                 return render(request, 'LAND_USE_PARCELS/verify_otp.html')
         else:
             messages.error(request, "Invalid OTP. Please try again.")
