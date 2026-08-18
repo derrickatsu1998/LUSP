@@ -2008,7 +2008,15 @@
             $('#pointToolbar').toggleClass('open');
         });
 
+        // 
+        
         // ============================================================
+            // CLOSE TOOLBAR ON MODAL ACTIONS
+            // ============================================================
+            $('#ptImportParcels, #ptPlotCoords, #ptPlotCSV, #ptSaveParcels, #ptLoadSaved, #ptLoadEdited').on('click', function() {
+                $('#pointToolbar').removeClass('open');
+            });
+                    ============================================================
         // 10. LAYERS PANEL
         // ============================================================
         // ============================================================
@@ -3964,6 +3972,7 @@
                 showToast('⚠️ No data to import.', 'warning');
                 return;
             }
+
             const selectedCrs = $('#parcelCrsSelect').val();
             if (selectedCrs === 'custom' && !customCrsApplied) {
                 showToast('⚠️ Please apply your custom EPSG before importing.', 'warning');
