@@ -215,15 +215,12 @@ logger = logging.getLogger(__name__)
 @require_http_methods(["GET", "POST"])
 def verify_otp_view(request):
     if request.method == 'POST':
-        # Combine the six OTP fields
         entered_otp = ''.join([request.POST.get(f'otp{i}', '') for i in range(1, 7)])
         stored_otp = request.session.get('otp')
         email = request.session.get('email')
 
-        # Debug logging – check Render logs
-        logger.info(f"Entered: {entered_otp}, Stored: {stored_otp}, Email: {email}")
+        print(f"Entered: {entered_otp}, Stored: {stored_otp}, Email: {email}")
 
-        # Validate OTP
         if not entered_otp:
             messages.error(request, "Please enter the 6-digit code.")
             return render(request, 'LAND_USE_PARCELS/verify_otp.html')
@@ -232,31 +229,22 @@ def verify_otp_view(request):
             messages.error(request, "OTP expired. Request a new one.")
             return redirect('request_otp')
 
-        # OTP matches
         if entered_otp == stored_otp:
-            try:
-                # Find the user
-                user = User.objects.get(email=email)
-                # Log the user in
+            user = User.objects.filter(email=email).first()
+            if user:
                 login(request, user)
-                # Clear session
                 request.session.pop('otp', None)
                 request.session.pop('email', None)
                 messages.success(request, "OTP verified successfully!")
 
+                # Debug prints
+                print(f"User authenticated: {request.user.is_authenticated}")
+                print(f"Redirecting to: /map/")
 
-                
-                return HttpResponse("✅ OTP verified! Redirect would happen.")
-
-                
-                # Redirect to map – both options work
-                # Option A: Use named URL (ensure 'map_view' exists in urls.py)
+                # Use hardcoded path for now
                 return redirect('/map/')
-                # Option B: Use hardcoded path (fallback)
-                # return redirect('/map/')
-
-            except User.DoesNotExist:
-                messages.error(request, f"User with email '{email}' not found. Please sign up first.")
+            else:
+                messages.error(request, f"User with email '{email}' not found.")
                 return render(request, 'LAND_USE_PARCELS/verify_otp.html')
         else:
             messages.error(request, "Invalid OTP. Please try again.")
