@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpResponse
 
 from .models import OTPCode, Parcel, SavedParcelLayer, Structure
 
@@ -212,9 +213,14 @@ def verify_otp_view(request):
                 request.session.pop('email', None)
                 messages.success(request, "OTP verified successfully!")
 
+
+                
+                return HttpResponse("✅ OTP verified! Redirect would happen.")
+
+                
                 # Redirect to map – both options work
                 # Option A: Use named URL (ensure 'map_view' exists in urls.py)
-                return redirect('map_view')
+                return redirect('/map/')
                 # Option B: Use hardcoded path (fallback)
                 # return redirect('/map/')
 
