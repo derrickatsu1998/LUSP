@@ -89,13 +89,6 @@ def structure_payload(structure):
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.core.mail import send_mail
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.http import require_http_methods
-import random
-
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.core.mail import send_mail
 from django.conf import settings
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
@@ -104,34 +97,36 @@ import random
 @ensure_csrf_cookie
 @require_http_methods(["GET", "POST"])
 def request_otp_view(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        if email:
-            # Generate 6-digit OTP
-            otp = ''.join(random.choices('0123456789', k=6))
-            request.session['otp'] = otp
-            request.session['email'] = email
+    if request.method == 'GET':
+        # Clear stale messages before showing the page
+        storage = messages.get_messages(request)
+        for _ in storage:
+            pass
+        return render(request, 'LAND_USE_PARCELS/request_otp.html')
 
-            # --- SEND EMAIL ---
-            subject = 'Your OTP for GSSM_LUSP'
-            message = f'Your OTP code is: {otp}\n\nThis code is valid for 10 minutes.'
-            from_email = settings.DEFAULT_FROM_EMAIL   # <-- Uses settings
-            recipient_list = [email]
+    # POST logic (unchanged)
+    email = request.POST.get('email')
+    if email:
+        otp = ''.join(random.choices('0123456789', k=6))
+        request.session['otp'] = otp
+        request.session['email'] = email
 
-            try:
-                send_mail(subject, message, from_email, recipient_list, fail_silently=False)
-                messages.success(request, f"OTP sent to {email}. Check your inbox.")
-                return redirect('verify_otp')
-            except Exception as e:
-                print(f"Email error: {e}")
-                messages.error(request, f"Could not send OTP. Error: {e}")
-                return render(request, 'LAND_USE_PARCELS/request_otp.html')
-        else:
-            messages.error(request, "Please enter your email address.")
+        subject = 'Your OTP for GSSM_LUSP'
+        message = f'Your OTP code is: {otp}\n\nThis code is valid for 10 minutes.'
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [email]
+
+        try:
+            send_mail(subject, message, from_email, recipient_list, fail_silently=False)
+            messages.success(request, f"OTP sent to {email}. Check your inbox.")
+            return redirect('verify_otp')
+        except Exception as e:
+            print(f"Email error: {e}")
+            messages.error(request, f"Could not send OTP. Error: {e}")
             return render(request, 'LAND_USE_PARCELS/request_otp.html')
-
-    return render(request, 'LAND_USE_PARCELS/request_otp.html')
-
+    else:
+        messages.error(request, "Please enter your email address.")
+        return render(request, 'LAND_USE_PARCELS/request_otp.html')
 # ============================================================
 # VERIFY OTP
 # ============================================================
