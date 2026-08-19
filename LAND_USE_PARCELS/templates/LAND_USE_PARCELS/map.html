@@ -8964,17 +8964,61 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                     const marker = L.marker([parcel.latitude, parcel.longitude], { icon: centroidIcon }).addTo(map);
                     marker.bindPopup(`
-                        <strong>📍 ${parcel.parcel_id}</strong><br>
-                        <em>Centroid</em><br>
-                        <button onclick="navigateToParcel('${parcel.parcel_id}')" class="btn btn-primary btn-sm">🧭 Navigate to Parcel</button>
-                    `);
+                    <strong>📍 ${parcel.parcel_id}</strong><br>
+                    <em>Centroid</em><br>
+                    <button onclick="navigateToParcel('${parcel.parcel_id}', ${parcel.latitude}, ${parcel.longitude})" 
+                            class="btn btn-primary btn-sm">
+                        🧭 Navigate to Parcel
+                    </button>
+                `);
                 }
             });
         }
 
-        function navigateToParcel(parcelId) {
-            window.location.href = `/parcel/${parcelId}/`;
+        function navigateToParcel(parcelId, lat, lng) {
+    // 1. Close any open popups
+    map.closePopup();
+
+    // 2. Fly to the parcel centroid
+    map.flyTo([lat, lng], 18, { duration: 1.5 });
+
+    // 3. If GPS is active, draw a line
+    if (userLocation) {
+        const from = [userLocation.lat, userLocation.lng];
+        const to = [lat, lng];
+        // Remove old navigation line if any
+        if (navigateLine) {
+            map.removeLayer(navigateLine);
+            navigateLine = null;
         }
+        navigateLine = L.polyline([from, to], {
+            color: '#1a73e8',
+            weight: 4,
+            dashArray: '6,6',
+            opacity: 0.8
+        }).addTo(map);
+        // Fit bounds
+        map.fitBounds(L.latLngBounds(from, to), { padding: [50, 50] });
+        showToast('📍 Navigation line drawn.', 'info');
+    } else {
+        showToast('📍 Parcel centered. Enable GPS for navigation line.', 'info');
+    }
+
+    // 4. Add a temporary marker at the parcel centroid
+    const marker = L.marker([lat, lng], {
+        icon: L.divIcon({
+            className: 'centroid-marker',
+            html: `<div style="width:20px;height:20px;background:#ff4444;border:2px solid white;border-radius:50%;box-shadow:0 0 10px rgba(255,68,68,0.8);"></div>`,
+            iconSize: [20,20],
+            iconAnchor: [10,10]
+        })
+    }).addTo(map);
+    // Remove after 10 seconds
+    setTimeout(() => map.removeLayer(marker), 10000);
+
+    // 5. Optionally open the survey modal for this parcel (if you have the feature)
+    // You can call openParcelSurvey(feature, layer) if you have the layer object.
+}
 
         // ============================================================
         // PARCEL IMPORT BUTTON (with centroid markers)
