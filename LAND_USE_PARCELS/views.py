@@ -378,11 +378,11 @@ def parcel_survey(request, parcel_id):
 # SAVE SURVEY FIELDS
 # ============================================================
 
-# Add this mapping at the top of views.py (outside any function)
+# At the top of views.py
 OLD_TO_NEW_LAND_USE = {
     'RES': 'RESIDENTIAL',
     'COM': 'COMMERCIAL',
-    'MIX': 'MIXED USE',        # if your model doesn't have this, remove or map to OTHER
+    'MIX': 'MIXED USE',
     'AGR': 'AGRICULTURE',
     'VAC': 'VACANT',
     'WET': 'WETLAND',
@@ -398,7 +398,7 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     allowed_land_uses = {value for value, _ in Parcel.LAND_USE_CHOICES}
     allowed_statuses = {value for value, _ in Parcel.STATUS_CHOICES}
 
-    # Build display‑name → code mapping (case‑insensitive)
+    # Build display‑name → code mapping
     display_to_code = {}
     for code, display in Parcel.LAND_USE_CHOICES:
         display_to_code[display.lower()] = code
@@ -424,23 +424,36 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     # --- Land‑use type ---
     if "field_land_use" in data:
         raw = data.get("field_land_use", "").strip()
+        print(f"[DEBUG] Land-use raw: '{raw}'")   # <-- LOG IT
+
         if raw:
-            # 1. Direct match (e.g., "COMMERCIAL")
+            # Try 1: Direct code match
             if raw in allowed_land_uses:
                 parcel.field_land_use = raw
+                print("[DEBUG] Accepted as direct code")
             else:
-                # 2. Try display name (e.g., "commercial")
+                # Try 2: Display name match
                 mapped = display_to_code.get(raw.lower())
                 if mapped and mapped in allowed_land_uses:
                     parcel.field_land_use = mapped
+                    print("[DEBUG] Accepted via display name")
                 else:
-                    # 3. Try old code (e.g., "COM")
+                    # Try 3: Old code match
                     mapped_old = OLD_TO_NEW_LAND_USE.get(raw.upper())
                     if mapped_old and mapped_old in allowed_land_uses:
                         parcel.field_land_use = mapped_old
+                        print("[DEBUG] Accepted via old code")
                     else:
-                        # 4. Still invalid – tell the user exactly what's wrong
-                        return f"Invalid land-use value: '{raw}'. Allowed: {', '.join(allowed_land_uses)}"
+                        # Try 4: Also check if raw is a display name without mapping
+                        # This is a fallback for any other variations
+                        for code, display in Parcel.LAND_USE_CHOICES:
+                            if display.lower() == raw.lower():
+                                parcel.field_land_use = code
+                                print("[DEBUG] Accepted via direct display comparison")
+                                break
+                        else:
+                            # Still no match
+                            return f"Invalid land-use value: '{raw}'. Allowed: {', '.join(allowed_land_uses)}"
         else:
             parcel.field_land_use = ""
 
@@ -455,7 +468,6 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     if files.get(photo_field):
         parcel.field_photo = files[photo_field]
 
-    # --- Mark as verified ---
     parcel.is_verified = True
     parcel.last_edited_by = user
     parcel.save()
