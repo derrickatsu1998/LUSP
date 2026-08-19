@@ -377,31 +377,30 @@ def parcel_survey(request, parcel_id):
 # ============================================================
 # SAVE SURVEY FIELDS
 # ============================================================
-
-# At the top of views.py
-OLD_TO_NEW_LAND_USE = {
-    'RES': 'RESIDENTIAL',
-    'COM': 'COMMERCIAL',
-    'MIX': 'MIXED USE',
-    'AGR': 'AGRICULTURE',
-    'VAC': 'VACANT',
-    'WET': 'WETLAND',
-    'REC': 'RECREATIONAL',
-    'IND': 'INDUSTRIAL',
-    'TRA': 'TRANSPORTATION',
-    'UTI': 'UTILITY',
-    'INS': 'INSTITUTIONAL',
-    'OTH': 'OTHER',
-}
-
 def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     allowed_land_uses = {value for value, _ in Parcel.LAND_USE_CHOICES}
     allowed_statuses = {value for value, _ in Parcel.STATUS_CHOICES}
 
-    # Build display‑name → code mapping
+    # Build display‑name → code mapping (case‑insensitive)
     display_to_code = {}
     for code, display in Parcel.LAND_USE_CHOICES:
         display_to_code[display.lower()] = code
+
+    # Built‑in mapping from old short codes to new full codes
+    short_to_full = {
+        'RES': 'RESIDENTIAL',
+        'COM': 'COMMERCIAL',
+        'MIX': 'MIXED USE',
+        'AGR': 'AGRICULTURE',
+        'VAC': 'VACANT',
+        'WET': 'WETLAND',
+        'REC': 'RECREATIONAL',
+        'IND': 'INDUSTRIAL',
+        'TRA': 'TRANSPORTATION',
+        'UTI': 'UTILITY',
+        'INS': 'INSTITUTIONAL',
+        'OTH': 'OTHER',
+    }
 
     # --- Simple text fields ---
     for field in ("parcel_name", "street", "section", "section_number", "field_notes"):
@@ -424,38 +423,37 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     # --- Land‑use type ---
     if "field_land_use" in data:
         raw = data.get("field_land_use", "").strip()
-        print(f"[DEBUG] Land-use raw: '{raw}'")   # <-- LOG IT
+        print(f"[DEBUG] Received land-use: '{raw}'")   # This will appear in Render logs
 
-        if raw:
-            # Try 1: Direct code match
+        if not raw:
+            parcel.field_land_use = ""
+        else:
+            # 1. Direct match (full code)
             if raw in allowed_land_uses:
                 parcel.field_land_use = raw
-                print("[DEBUG] Accepted as direct code")
+                print("[DEBUG] Accepted as full code")
             else:
-                # Try 2: Display name match
+                # 2. Display name (case‑insensitive)
                 mapped = display_to_code.get(raw.lower())
                 if mapped and mapped in allowed_land_uses:
                     parcel.field_land_use = mapped
                     print("[DEBUG] Accepted via display name")
                 else:
-                    # Try 3: Old code match
-                    mapped_old = OLD_TO_NEW_LAND_USE.get(raw.upper())
-                    if mapped_old and mapped_old in allowed_land_uses:
-                        parcel.field_land_use = mapped_old
-                        print("[DEBUG] Accepted via old code")
+                    # 3. Old short code (e.g., 'COM')
+                    mapped_short = short_to_full.get(raw.upper())
+                    if mapped_short and mapped_short in allowed_land_uses:
+                        parcel.field_land_use = mapped_short
+                        print("[DEBUG] Accepted via short code")
                     else:
-                        # Try 4: Also check if raw is a display name without mapping
-                        # This is a fallback for any other variations
+                        # 4. Direct display name fallback (if any)
                         for code, display in Parcel.LAND_USE_CHOICES:
                             if display.lower() == raw.lower():
                                 parcel.field_land_use = code
-                                print("[DEBUG] Accepted via direct display comparison")
+                                print("[DEBUG] Accepted via direct display match")
                                 break
                         else:
-                            # Still no match
+                            # Still no match → return error
                             return f"Invalid land-use value: '{raw}'. Allowed: {', '.join(allowed_land_uses)}"
-        else:
-            parcel.field_land_use = ""
 
     # --- Structure status ---
     if "field_structure_status" in data:
