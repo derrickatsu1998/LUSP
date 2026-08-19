@@ -378,14 +378,14 @@ def parcel_survey(request, parcel_id):
 # SAVE SURVEY FIELDS
 # ============================================================
 
-# Mapping from old short codes (frontend) to new full codes (backend)
+# Add this mapping at the top of views.py (outside any function)
 OLD_TO_NEW_LAND_USE = {
     'RES': 'RESIDENTIAL',
     'COM': 'COMMERCIAL',
-    'MIX': 'MIXED USE',          # Check if your model has this; if not, adjust or remove
+    'MIX': 'MIXED USE',        # if your model doesn't have this, remove or map to OTHER
     'AGR': 'AGRICULTURE',
     'VAC': 'VACANT',
-    'WET': 'WETLAND',            # Adjust according to your actual choices
+    'WET': 'WETLAND',
     'REC': 'RECREATIONAL',
     'IND': 'INDUSTRIAL',
     'TRA': 'TRANSPORTATION',
@@ -395,19 +395,13 @@ OLD_TO_NEW_LAND_USE = {
 }
 
 def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
-    """
-    Update a parcel with survey data.
-
-    Returns:
-        None on success, or an error message string on failure.
-    """
     allowed_land_uses = {value for value, _ in Parcel.LAND_USE_CHOICES}
     allowed_statuses = {value for value, _ in Parcel.STATUS_CHOICES}
 
-    # Build a case‑insensitive mapping from display name → code
-    land_use_display_map = {}
+    # Build display‑name → code mapping (case‑insensitive)
+    display_to_code = {}
     for code, display in Parcel.LAND_USE_CHOICES:
-        land_use_display_map[display.lower()] = code
+        display_to_code[display.lower()] = code
 
     # --- Simple text fields ---
     for field in ("parcel_name", "street", "section", "section_number", "field_notes"):
@@ -429,28 +423,28 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
 
     # --- Land‑use type ---
     if "field_land_use" in data:
-        raw_value = data.get("field_land_use", "").strip()
-        if raw_value:
-            # 1. Try as code directly
-            if raw_value in allowed_land_uses:
-                parcel.field_land_use = raw_value
+        raw = data.get("field_land_use", "").strip()
+        if raw:
+            # 1. Direct match (e.g., "COMMERCIAL")
+            if raw in allowed_land_uses:
+                parcel.field_land_use = raw
             else:
-                # 2. Try mapping from display name (case‑insensitive)
-                mapped_from_display = land_use_display_map.get(raw_value.lower())
-                if mapped_from_display and mapped_from_display in allowed_land_uses:
-                    parcel.field_land_use = mapped_from_display
+                # 2. Try display name (e.g., "commercial")
+                mapped = display_to_code.get(raw.lower())
+                if mapped and mapped in allowed_land_uses:
+                    parcel.field_land_use = mapped
                 else:
-                    # 3. Try mapping from old short code
-                    mapped_from_old = OLD_TO_NEW_LAND_USE.get(raw_value.upper())
-                    if mapped_from_old and mapped_from_old in allowed_land_uses:
-                        parcel.field_land_use = mapped_from_old
+                    # 3. Try old code (e.g., "COM")
+                    mapped_old = OLD_TO_NEW_LAND_USE.get(raw.upper())
+                    if mapped_old and mapped_old in allowed_land_uses:
+                        parcel.field_land_use = mapped_old
                     else:
-                        # 4. Still invalid – return a clear error
-                        return f"Invalid land-use value: '{raw_value}'. Allowed: {', '.join(allowed_land_uses)}"
+                        # 4. Still invalid – tell the user exactly what's wrong
+                        return f"Invalid land-use value: '{raw}'. Allowed: {', '.join(allowed_land_uses)}"
         else:
             parcel.field_land_use = ""
 
-    # --- Overall structure status ---
+    # --- Structure status ---
     if "field_structure_status" in data:
         value = data.get("field_structure_status", "").strip()
         if value and value not in allowed_statuses:
@@ -466,7 +460,7 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     parcel.last_edited_by = user
     parcel.save()
 
-    return None  # No error
+    return None
 
 # ============================================================
 # BACKWARDS-COMPATIBLE UPDATE API
