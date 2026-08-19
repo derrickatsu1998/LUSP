@@ -378,17 +378,6 @@ def parcel_survey(request, parcel_id):
 # SAVE SURVEY FIELDS
 # ============================================================
 
-# Mapping for lenient land‑use input (display name → code)
-LAND_USE_MAP = {
-    'residential': 'RES',
-    'commercial': 'COM',
-    'mixed-use': 'MIX',
-    'mixed use': 'MIX',
-    'agriculture': 'AGR',
-    'vacant': 'VAC',
-    'wetland': 'WET',
-}
-
 def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     """
     Update a parcel with survey data.
@@ -398,6 +387,11 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     """
     allowed_land_uses = {value for value, _ in Parcel.LAND_USE_CHOICES}
     allowed_statuses = {value for value, _ in Parcel.STATUS_CHOICES}
+
+    # Build a case‑insensitive mapping from display name → code
+    land_use_display_map = {}
+    for code, display in Parcel.LAND_USE_CHOICES:
+        land_use_display_map[display.lower()] = code
 
     # --- Simple text fields ---
     for field in ("parcel_name", "street", "section", "section_number", "field_notes"):
@@ -419,16 +413,19 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
 
     # --- Land‑use type ---
     if "field_land_use" in data:
-        value = data.get("field_land_use", "").strip()
-        if value:
-            # Try to map display name to code (case‑insensitive)
-            if value not in allowed_land_uses:
-                mapped = LAND_USE_MAP.get(value.lower())
+        raw_value = data.get("field_land_use", "").strip()
+        if raw_value:
+            # 1. Try as code
+            if raw_value in allowed_land_uses:
+                parcel.field_land_use = raw_value
+            else:
+                # 2. Try mapping from display name (case‑insensitive)
+                mapped = land_use_display_map.get(raw_value.lower())
                 if mapped and mapped in allowed_land_uses:
-                    value = mapped
+                    parcel.field_land_use = mapped
                 else:
-                    return "Invalid land-use value."
-            parcel.field_land_use = value
+                    # 3. If still invalid, return a clear error
+                    return f"Invalid land-use value: '{raw_value}'. Allowed: {', '.join(allowed_land_uses)}"
         else:
             parcel.field_land_use = ""
 
