@@ -278,6 +278,23 @@ def get_parcel_data(request):
 # PARCEL SURVEY
 # ============================================================
 
+import json
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+
+# Map display names to codes (for lenient parsing)
+LAND_USE_MAP = {
+    'residential': 'RES',
+    'commercial': 'COM',
+    'mixed-use': 'MIX',
+    'mixed use': 'MIX',
+    'agriculture': 'AGR',
+    'vacant': 'VAC',
+    'wetland': 'WET',
+}
+
 @login_required(login_url="request_otp")
 @require_http_methods(["GET", "POST"])
 def parcel_survey(request, parcel_id):
@@ -308,37 +325,87 @@ def parcel_survey(request, parcel_id):
             "is_verified": parcel.is_verified,
         })
 
-    parcel, created = Parcel.objects.get_or_create(parcel_id=parcel_id)
-    error = save_survey_fields(
-        parcel=parcel,
-        data=request.POST,
-        files=request.FILES,
-        user=request.user,
-        photo_field="field_photo",
-    )
-    if error:
-        return JsonResponse({"ok": False, "error": error}, status=400)
+    # --- POST ---
+    try:
+        parcel, created = Parcel.objects.get_or_create(parcel_id=parcel_id)
 
-    return JsonResponse({
-        "ok": True,
-        "message": f"Parcel {parcel_id} saved successfully.",
-        "created": created,
-        "parcel": parcel_feature(parcel),
-    })
+        # 1. Save simple fields (latitude, land_use, etc.)
+        error = save_survey_fields(
+            parcel=parcel,
+            data=request.POST,
+            files=request.FILES,
+            user=request.user,
+            photo_field="field_photo",
+        )
+        if error:
+            return JsonResponse({"ok": False, "error": error}, status=400)
 
+        # 2. Save structures from JSON
+        structures_json = request.POST.get('structures_json')
+        if structures_json:
+            try:
+                structures_data = json.loads(structures_json)
+                # Delete existing structures (optional – you might want to replace)
+                # If you want to keep existing and update, adjust logic.
+                Structure.objects.filter(parcel=parcel).delete()
+                for s_data in structures_data:
+                    Structure.objects.create(
+                        parcel=parcel,
+                        structure_type=s_data.get('structure_type', ''),
+                        storeys=s_data.get('storeys', 1),
+                        condition=s_data.get('condition', ''),
+                        notes=s_data.get('notes', ''),
+                        # sequence = s_data.get('sequence', 0) if you have a sequence field
+                    )
+            except json.JSONDecodeError as e:
+                return JsonResponse({"ok": False, "error": f"Invalid structures JSON: {str(e)}"}, status=400)
+
+        # 3. Mark as verified
+        parcel.is_verified = True
+        parcel.last_edited_by = request.user
+        parcel.save()
+
+        return JsonResponse({
+            "ok": True,
+            "message": f"Parcel {parcel_id} saved successfully.",
+            "created": created,
+            "parcel": parcel_feature(parcel),  # make sure this function exists
+        })
+
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=400)
 # ============================================================
 # SAVE SURVEY FIELDS
 # ============================================================
 
+# Mapping for lenient land‑use input (display name → code)
+LAND_USE_MAP = {
+    'residential': 'RES',
+    'commercial': 'COM',
+    'mixed-use': 'MIX',
+    'mixed use': 'MIX',
+    'agriculture': 'AGR',
+    'vacant': 'VAC',
+    'wetland': 'WET',
+}
+
 def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
+    """
+    Update a parcel with survey data.
+
+    Returns:
+        None on success, or an error message string on failure.
+    """
     allowed_land_uses = {value for value, _ in Parcel.LAND_USE_CHOICES}
     allowed_statuses = {value for value, _ in Parcel.STATUS_CHOICES}
 
+    # --- Simple text fields ---
     for field in ("parcel_name", "street", "section", "section_number", "field_notes"):
         if field in data:
             value = data.get(field, "").strip()
             setattr(parcel, field, value)
 
+    # --- Latitude / Longitude ---
     for field in ("latitude", "longitude"):
         if field in data:
             value = data.get(field, "").strip()
@@ -350,25 +417,38 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
             except (TypeError, ValueError):
                 return f"Invalid {field} value."
 
+    # --- Land‑use type ---
     if "field_land_use" in data:
         value = data.get("field_land_use", "").strip()
-        if value and value not in allowed_land_uses:
-            return "Invalid land-use value."
-        parcel.field_land_use = value
+        if value:
+            # Try to map display name to code (case‑insensitive)
+            if value not in allowed_land_uses:
+                mapped = LAND_USE_MAP.get(value.lower())
+                if mapped and mapped in allowed_land_uses:
+                    value = mapped
+                else:
+                    return "Invalid land-use value."
+            parcel.field_land_use = value
+        else:
+            parcel.field_land_use = ""
 
+    # --- Overall structure status ---
     if "field_structure_status" in data:
         value = data.get("field_structure_status", "").strip()
         if value and value not in allowed_statuses:
             return "Invalid structure-status value."
         parcel.field_structure_status = value
 
+    # --- Photo ---
     if files.get(photo_field):
         parcel.field_photo = files[photo_field]
 
+    # --- Mark as verified ---
     parcel.is_verified = True
     parcel.last_edited_by = user
     parcel.save()
-    return None
+
+    return None  # No error
 
 # ============================================================
 # BACKWARDS-COMPATIBLE UPDATE API
