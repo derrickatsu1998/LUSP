@@ -378,6 +378,22 @@ def parcel_survey(request, parcel_id):
 # SAVE SURVEY FIELDS
 # ============================================================
 
+# Mapping from old short codes (frontend) to new full codes (backend)
+OLD_TO_NEW_LAND_USE = {
+    'RES': 'RESIDENTIAL',
+    'COM': 'COMMERCIAL',
+    'MIX': 'MIXED USE',          # Check if your model has this; if not, adjust or remove
+    'AGR': 'AGRICULTURE',
+    'VAC': 'VACANT',
+    'WET': 'WETLAND',            # Adjust according to your actual choices
+    'REC': 'RECREATIONAL',
+    'IND': 'INDUSTRIAL',
+    'TRA': 'TRANSPORTATION',
+    'UTI': 'UTILITY',
+    'INS': 'INSTITUTIONAL',
+    'OTH': 'OTHER',
+}
+
 def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     """
     Update a parcel with survey data.
@@ -415,17 +431,22 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     if "field_land_use" in data:
         raw_value = data.get("field_land_use", "").strip()
         if raw_value:
-            # 1. Try as code
+            # 1. Try as code directly
             if raw_value in allowed_land_uses:
                 parcel.field_land_use = raw_value
             else:
                 # 2. Try mapping from display name (case‑insensitive)
-                mapped = land_use_display_map.get(raw_value.lower())
-                if mapped and mapped in allowed_land_uses:
-                    parcel.field_land_use = mapped
+                mapped_from_display = land_use_display_map.get(raw_value.lower())
+                if mapped_from_display and mapped_from_display in allowed_land_uses:
+                    parcel.field_land_use = mapped_from_display
                 else:
-                    # 3. If still invalid, return a clear error
-                    return f"Invalid land-use value: '{raw_value}'. Allowed: {', '.join(allowed_land_uses)}"
+                    # 3. Try mapping from old short code
+                    mapped_from_old = OLD_TO_NEW_LAND_USE.get(raw_value.upper())
+                    if mapped_from_old and mapped_from_old in allowed_land_uses:
+                        parcel.field_land_use = mapped_from_old
+                    else:
+                        # 4. Still invalid – return a clear error
+                        return f"Invalid land-use value: '{raw_value}'. Allowed: {', '.join(allowed_land_uses)}"
         else:
             parcel.field_land_use = ""
 
