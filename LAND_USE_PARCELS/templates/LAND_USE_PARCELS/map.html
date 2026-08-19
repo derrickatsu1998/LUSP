@@ -9395,121 +9395,135 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // ---- Form submit with validation ----
-        $('#parcelSurveyForm').on('submit', async function(event) {
-            event.preventDefault();
+$('#parcelSurveyForm').on('submit', async function(event) {
+    event.preventDefault();
 
-            if (!this.checkValidity()) {
-                $(this).addClass('was-validated');
-                const firstInvalid = $(this).find(':invalid:first');
-                if (firstInvalid.length) {
-                    firstInvalid.focus();
-                }
-                setSurveyStatus('Please fill in all required fields.', 'danger');
-                return;
-            }
+    if (!this.checkValidity()) {
+        $(this).addClass('was-validated');
+        const firstInvalid = $(this).find(':invalid:first');
+        if (firstInvalid.length) {
+            firstInvalid.focus();
+        }
+        setSurveyStatus('Please fill in all required fields.', 'danger');
+        return;
+    }
 
-            const parcelId = $('#surveyParcelId').val().trim();
-            if (!parcelId) {
-                setSurveyStatus('Parcel ID is required.', 'danger');
-                $('#surveyParcelId').focus();
-                return;
-            }
+    const parcelId = $('#surveyParcelId').val().trim();
+    if (!parcelId) {
+        setSurveyStatus('Parcel ID is required.', 'danger');
+        $('#surveyParcelId').focus();
+        return;
+    }
 
-            const centre = activeParcelLayer ? parcelCentre(activeParcelLayer) : null;
-            const formData = new FormData(this);
-            if (centre) {
-                formData.set('latitude', centre.lat.toFixed(8));
-                formData.set('longitude', centre.lng.toFixed(8));
-            }
-            const structures = collectStructures();
-            formData.set('structures_json', JSON.stringify(structures));
-            formData.set('color', editedColor);
+    const centre = activeParcelLayer ? parcelCentre(activeParcelLayer) : null;
+    const formData = new FormData(this);
+    if (centre) {
+        formData.set('latitude', centre.lat.toFixed(8));
+        formData.set('longitude', centre.lng.toFixed(8));
+    }
+    const structures = collectStructures();
+    formData.set('structures_json', JSON.stringify(structures));
+    formData.set('color', editedColor);
 
-            const button = $('#parcelSurveySaveBtn').prop('disabled', true);
-            setSurveyStatus('Saving survey…', 'info');
-            try {
-                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                const response = await fetch(`/api/parcels/${encodeURIComponent(parcelId)}/survey/`, {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'same-origin',
-                    headers: { 'X-CSRFToken': csrfToken }
-                });
-                const contentType = response.headers.get('content-type');
-                if (!response.ok || (contentType && contentType.includes('text/html'))) {
-                    if (response.status === 302 || response.url && response.url.includes('request-otp')) {
-                        throw new Error('Session expired. Please log in again.');
-                    } else {
-                        throw new Error('Server error. Please check your connection.');
-                    }
-                }
-                const data = await response.json();
-                if (!data.ok) throw new Error(data.error || 'The survey could not be saved.');
-                // Update feature
-                activeParcelFeature.properties = {
-                    ...(activeParcelFeature.properties || {}),
-                    ...data.parcel.properties,
-                    parcel_id: parcelId,
-                    verified: true,
-                    color: editedColor
-                };
-                // Update layer style
-                if (activeParcelLayer && activeParcelLayer.setStyle) {
-                    activeParcelLayer.setStyle({
-                        fillColor: editedColor,
-                        color: editedColor,
-                        weight: 3,
-                        fillOpacity: 0.5
-                    });
-                }
-                // Remove from parcelLayer if it's there
-                parcelLayer.removeLayer(activeParcelLayer);
-                // Create a new layer for edited
-                const newLayer = L.geoJSON(activeParcelFeature, {
-                    style: {
-                        color: editedColor,
-                        weight: 3,
-                        fillColor: editedColor,
-                        fillOpacity: 0.5
-                    }
-                });
-                newLayer.addTo(editedParcelLayer);
-                // Update activeParcelLayer to the new one
-                activeParcelLayer = newLayer;
-                // Attach click events to the new layer
-                newLayer.eachLayer(function(l) {
-                    l.on({
-                        click: function() {
-                            if (activeParcelFeature.properties && activeParcelFeature.properties.centroid) {
-                                activeParcelCentroid = activeParcelFeature.properties.centroid;
-                                if (userLocation) {
-                                    updateParcelDistance(activeParcelCentroid);
-                                } else {
-                                    $('#propDistance').text('Enable GPS');
-                                    $('#propBearing').text('—');
-                                    $('#navigateBtn').hide();
-                                }
-                            }
-                            openParcelSurvey(activeParcelFeature, l);
-                        },
-                        mouseover: function() { l.setStyle({ weight: 5, fillOpacity: 0.7 }); },
-                        mouseout: function() { l.setStyle({ weight: 3, fillOpacity: 0.5 }); }
-                    });
-                });
+    const button = $('#parcelSurveySaveBtn').prop('disabled', true);
+    setSurveyStatus('Saving survey…', 'info');
 
-                showToast(`✅ Parcel ${parcelId} saved (edited).`, 'success');
-                parcelSurveyModal.hide();
-            } catch (error) {
-                console.error(error);
-                setSurveyStatus(error.message || 'The survey could not be saved.', 'danger');
-                if (error.message.includes('Session expired')) {
-                    showToast('⚠️ Session expired. Please log in again.', 'danger');
-                }
-            } finally {
-                button.prop('disabled', false);
-            }
+    try {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const response = await fetch(`/api/parcels/${encodeURIComponent(parcelId)}/survey/`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: { 'X-CSRFToken': csrfToken }
         });
 
+        // Try to parse the response as JSON
+        let data;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            // If the response is not JSON, read as text (could be an HTML error page)
+            const text = await response.text();
+            throw new Error(`Server returned ${response.status}: ${text.substring(0, 100)}`);
+        }
+
+        if (!response.ok || !data.ok) {
+            // Use the server's error message if available
+            throw new Error(data.error || `Server error (${response.status})`);
+        }
+
+        // --- Success ---
+        // Update feature properties
+        activeParcelFeature.properties = {
+            ...(activeParcelFeature.properties || {}),
+            ...data.parcel.properties,
+            parcel_id: parcelId,
+            verified: true,
+            color: editedColor
+        };
+
+        // Update layer style
+        if (activeParcelLayer && activeParcelLayer.setStyle) {
+            activeParcelLayer.setStyle({
+                fillColor: editedColor,
+                color: editedColor,
+                weight: 3,
+                fillOpacity: 0.5
+            });
+        }
+
+        // Remove from parcelLayer if it's there
+        parcelLayer.removeLayer(activeParcelLayer);
+
+        // Create a new layer for edited
+        const newLayer = L.geoJSON(activeParcelFeature, {
+            style: {
+                color: editedColor,
+                weight: 3,
+                fillColor: editedColor,
+                fillOpacity: 0.5
+            }
+        });
+        newLayer.addTo(editedParcelLayer);
+
+        // Update activeParcelLayer to the new one
+        activeParcelLayer = newLayer;
+
+        // Attach click events to the new layer
+        newLayer.eachLayer(function(l) {
+            l.on({
+                click: function() {
+                    if (activeParcelFeature.properties && activeParcelFeature.properties.centroid) {
+                        activeParcelCentroid = activeParcelFeature.properties.centroid;
+                        if (userLocation) {
+                            updateParcelDistance(activeParcelCentroid);
+                        } else {
+                            $('#propDistance').text('Enable GPS');
+                            $('#propBearing').text('—');
+                            $('#navigateBtn').hide();
+                        }
+                    }
+                    openParcelSurvey(activeParcelFeature, l);
+                },
+                mouseover: function() { l.setStyle({ weight: 5, fillOpacity: 0.7 }); },
+                mouseout: function() { l.setStyle({ weight: 3, fillOpacity: 0.5 }); }
+            });
+        });
+
+        showToast(`✅ Parcel ${parcelId} saved (edited).`, 'success');
+        parcelSurveyModal.hide();
+
+    } catch (error) {
+        console.error('Save error:', error);
+        // Display the error message from the server or a fallback
+        const msg = error.message || 'The survey could not be saved.';
+        setSurveyStatus(msg, 'danger');
+        showToast('❌ ' + msg, 'danger');
+    } finally {
+        button.prop('disabled', false);
+    }
+});
         // ============================================================
         // SAVE CURRENT PARCELS
         // ============================================================
