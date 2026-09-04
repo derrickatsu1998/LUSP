@@ -13,7 +13,7 @@ class ParcelAdmin(admin.ModelAdmin):
     list_display = (
         'parcel_id', 'parcel_name', 'street', 'master_plan_zone',
         'field_land_use', 'field_structure_status', 'is_verified',
-        'last_edited_by', 'date_visited'
+        'last_edited_by', 'date_visited', 'locked_by', 'locked_at'
     )
     search_fields = (
         'parcel_id', 'parcel_name', 'street', 'field_notes',
@@ -23,9 +23,7 @@ class ParcelAdmin(admin.ModelAdmin):
         'is_verified', 'field_land_use', 'field_structure_status',
         'master_plan_zone', 'date_visited'
     )
-    # Only keep fields that actually exist on your model
-    # Remove 'id' and 'location' if they cause errors
-    readonly_fields = ('date_visited',)  # you can add back 'id' if it exists, but 'parcel_id' is the PK
+    readonly_fields = ('date_visited',)
     ordering = ('-date_visited',)
 
     # ---- Custom admin actions for export ----
@@ -50,6 +48,8 @@ class ParcelAdmin(admin.ModelAdmin):
                         "field_notes": parcel.field_notes,
                         "is_verified": parcel.is_verified,
                         "date_visited": parcel.date_visited.isoformat() if parcel.date_visited else None,
+                        "locked_by": parcel.locked_by,
+                        "locked_at": parcel.locked_at.isoformat() if parcel.locked_at else None,
                     }
                 }
                 features.append(feature)
@@ -63,7 +63,8 @@ class ParcelAdmin(admin.ModelAdmin):
         fields = [
             'parcel_id', 'parcel_name', 'street', 'master_plan_zone',
             'field_land_use', 'field_structure_status', 'field_notes',
-            'is_verified', 'latitude', 'longitude', 'date_visited'
+            'is_verified', 'latitude', 'longitude', 'date_visited',
+            'locked_by', 'locked_at'
         ]
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="parcels.csv"'
@@ -79,7 +80,6 @@ class ParcelAdmin(admin.ModelAdmin):
         wkt_lines = []
         for parcel in queryset:
             if parcel.longitude is not None and parcel.latitude is not None:
-                # Manual WKT for a Point
                 wkt = f"POINT({parcel.longitude} {parcel.latitude})"
                 wkt_lines.append(f"{parcel.parcel_id}: {wkt}")
         content = "\n".join(wkt_lines)
@@ -151,10 +151,8 @@ class OTPCodeAdmin(admin.ModelAdmin):
 # SAVED PARCEL LAYER ADMIN
 # ============================================================
 
-
-
-
-@admin.register(Parcel)
-class ParcelAdmin(admin.ModelAdmin):
-    list_display = ('parcel_id', 'parcel_name', 'locked_by', 'locked_at', 'is_verified')
-    # ... other settings ...
+@admin.register(SavedParcelLayer)
+class SavedParcelLayerAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'name', 'created_at')
+    list_filter = ('user', 'created_at')
+    search_fields = ('name', 'user__email')
