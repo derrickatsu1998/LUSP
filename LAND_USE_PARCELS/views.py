@@ -381,13 +381,13 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     allowed_land_uses = {value for value, _ in Parcel.LAND_USE_CHOICES}
     allowed_statuses = {value for value, _ in Parcel.STATUS_CHOICES}
 
-    # Build display‑name → code mapping (case‑insensitive)
+    # Build display‑name → code mapping (case‑insensitive) for land use
     display_to_code = {}
     for code, display in Parcel.LAND_USE_CHOICES:
         display_to_code[display.lower()] = code
 
-    # Built‑in mapping from old short codes to new full codes
-    short_to_full = {
+    # Built‑in mapping from old short codes to new full codes for land use
+    land_use_short_to_full = {
         'RES': 'RESIDENTIAL',
         'COM': 'COMMERCIAL',
         'MIX': 'MIXED USE',
@@ -400,6 +400,21 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
         'UTI': 'UTILITY',
         'INS': 'INSTITUTIONAL',
         'OTH': 'OTHER',
+    }
+
+    # --- ADD THIS: Structure status mapping ---
+    # Build display‑name → code mapping for structure status
+    status_display_to_code = {}
+    for code, display in Parcel.STATUS_CHOICES:
+        status_display_to_code[display.lower()] = code
+
+    # Mapping from old short codes to new full codes for structure status
+    status_short_to_full = {
+        'COM': 'EXCELLENT',          # Complete → Excellent
+        'UC': 'UNDER_CONSTRUCTION',  # Under construction
+        'UN': 'UNCOMPLETED',         # Uncompleted / roofed
+        'COL': 'DILAPIDATED',        # Collapsed → Dilapidated
+        'NONE': 'VACANT',            # No structure → Vacant
     }
 
     # --- Simple text fields ---
@@ -423,7 +438,7 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     # --- Land‑use type ---
     if "field_land_use" in data:
         raw = data.get("field_land_use", "").strip()
-        print(f"[DEBUG] Received land-use: '{raw}'")   # This will appear in Render logs
+        print(f"[DEBUG] Received land-use: '{raw}'")
 
         if not raw:
             parcel.field_land_use = ""
@@ -440,7 +455,7 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
                     print("[DEBUG] Accepted via display name")
                 else:
                     # 3. Old short code (e.g., 'COM')
-                    mapped_short = short_to_full.get(raw.upper())
+                    mapped_short = land_use_short_to_full.get(raw.upper())
                     if mapped_short and mapped_short in allowed_land_uses:
                         parcel.field_land_use = mapped_short
                         print("[DEBUG] Accepted via short code")
@@ -452,15 +467,41 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
                                 print("[DEBUG] Accepted via direct display match")
                                 break
                         else:
-                            # Still no match → return error
                             return f"Invalid land-use value: '{raw}'. Allowed: {', '.join(allowed_land_uses)}"
 
-    # --- Structure status ---
+    # --- Structure status (UPDATED WITH MAPPING) ---
     if "field_structure_status" in data:
-        value = data.get("field_structure_status", "").strip()
-        if value and value not in allowed_statuses:
-            return "Invalid structure-status value."
-        parcel.field_structure_status = value
+        raw = data.get("field_structure_status", "").strip()
+        print(f"[DEBUG] Received structure status: '{raw}'")
+
+        if not raw:
+            parcel.field_structure_status = ""
+        else:
+            # 1. Direct match (full code)
+            if raw in allowed_statuses:
+                parcel.field_structure_status = raw
+                print("[DEBUG] Accepted as full code")
+            else:
+                # 2. Display name (case‑insensitive)
+                mapped = status_display_to_code.get(raw.lower())
+                if mapped and mapped in allowed_statuses:
+                    parcel.field_structure_status = mapped
+                    print("[DEBUG] Accepted via display name")
+                else:
+                    # 3. Old short code (e.g., 'COM', 'UC')
+                    mapped_short = status_short_to_full.get(raw.upper())
+                    if mapped_short and mapped_short in allowed_statuses:
+                        parcel.field_structure_status = mapped_short
+                        print("[DEBUG] Accepted via short code")
+                    else:
+                        # 4. Direct display name fallback
+                        for code, display in Parcel.STATUS_CHOICES:
+                            if display.lower() == raw.lower():
+                                parcel.field_structure_status = code
+                                print("[DEBUG] Accepted via direct display match")
+                                break
+                        else:
+                            return f"Invalid structure-status value: '{raw}'. Allowed: {', '.join(allowed_statuses)}"
 
     # --- Photo ---
     if files.get(photo_field):
@@ -471,7 +512,6 @@ def save_survey_fields(parcel, data, files, user, photo_field="field_photo"):
     parcel.save()
 
     return None
-
 # ============================================================
 # BACKWARDS-COMPATIBLE UPDATE API
 # ============================================================
