@@ -4334,22 +4334,20 @@
         }
 
         function applySurveyValues(values) {
-            $('#surveyParcelName').val(values.parcel_name || '');
-            $('#surveySection').val(values.section || '');
-            $('#surveySectionNumber').val(values.section_number || '');
-            $('#surveyLandUse').val(values.field_land_use || '');
-            $('#surveyStructureStatus').val(values.field_structure_status || 
-            
-            '');
-            $('#surveyNotes').val(values.field_notes || '');
-               $('#surveyStreet').val(values.street || '');
-            $('#surveyMasterPlanZone').val(values.master_plan_zone || '');
-}
-            if (values.field_photo_url) {
-                $('#surveyPhotoPreview').attr('src', values.field_photo_url).removeClass('d-none');
-            }
-        }
+    $('#surveyParcelName').val(values.parcel_name || '');
+    $('#surveySection').val(values.section || '');
+    $('#surveySectionNumber').val(values.section_number || '');
+    $('#surveyLandUse').val(values.field_land_use || '');
+    $('#surveyStructureStatus').val(values.field_structure_status || '');
+    $('#surveyNotes').val(values.field_notes || '');
+    $('#surveyStreet').val(values.street || '');
+    $('#surveyMasterPlanZone').val(values.master_plan_zone || '');
 
+    // Photo handling (must be inside the function)
+    if (values.field_photo_url) {
+        $('#surveyPhotoPreview').attr('src', values.field_photo_url).removeClass('d-none');
+    }
+}
         const parcelStyle = {
             color: '#2e7d32', weight: 2, opacity: 1,
             fillColor: '#4caf50', fillOpacity: 0.3
