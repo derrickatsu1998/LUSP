@@ -11,6 +11,17 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods
 from django.contrib.admin.views.decorators import staff_member_required
+
+
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from django.core.exceptions import PermissionDenied
+from .services import ParcelLockService
+from .models import Parcel
+
 from django.http import HttpResponse
 
 from .models import OTPCode, Parcel, SavedParcelLayer, Structure
@@ -771,3 +782,27 @@ def logout_inactive(request):
     """Logout due to inactivity."""
     logout(request)
     return JsonResponse({'logout': True})
+
+
+
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def parcel_lock(request, parcel_id):
+    parcel = get_object_or_404(Parcel, parcel_id=parcel_id)
+    user = request.user
+
+    if request.method == 'GET':
+        status_data = ParcelLockService.get_status(parcel)
+        return Response(status_data)
+
+    try:
+        if request.method == 'POST':
+            ParcelLockService.acquire(parcel, user)
+            return Response({'success': True, 'message': 'Lock acquired'})
+        elif request.method == 'DELETE':
+            ParcelLockService.release(parcel, user)
+            return Response({'success': True, 'message': 'Lock released'})
+    except PermissionDenied as e:
+        return Response({'error': str(e)}, status=status.HTTP_409_CONFLICT)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

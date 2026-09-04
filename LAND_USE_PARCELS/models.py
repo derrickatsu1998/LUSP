@@ -88,6 +88,8 @@ class OTPCode(models.Model):
 # ============================================================
 # PARCEL
 # ============================================================
+from django.contrib.auth.models import User
+from django.db import models
 
 class Parcel(models.Model):
     """Land parcel with field survey data."""
@@ -272,6 +274,22 @@ class Parcel(models.Model):
         return "Verified" if self.is_verified else "Not Verified"
 
 
+    locked_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='locked_parcels'
+    )
+    locked_at = models.DateTimeField(null=True, blank=True)
+    lock_version = models.PositiveIntegerField(default=0)   # for optimistic concurrency
+
+    # Metadata
+    created_by = models.ForeignKey(User, related_name='created_parcels', on_delete=models.SET_NULL, null=True)
+    last_edited_by = models.ForeignKey(User, related_name='edited_parcels', on_delete=models.SET_NULL, null=True)
+    last_edited_at = models.DateTimeField(auto_now=True)
+
+    # Audit
+    is_active = models.BooleanField(default=True)   # soft delete
+
+
 # ============================================================
 # SAVED PARCEL LAYER
 # ============================================================
@@ -389,3 +407,4 @@ class Structure(models.Model):
 
     def __str__(self):
         return f"{self.get_structure_type_display()} - {self.parcel.parcel_id}"
+

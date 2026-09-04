@@ -36,4 +36,6 @@ urlpatterns = [
 
     # Parcel detail (for GPS navigation)
     path("parcel/<str:parcel_id>/", views.parcel_detail_view, name="parcel_detail"),
+
+     path('api/parcels/<str:parcel_id>/lock/', views.parcel_lock, name='parcel_lock'),
 ]

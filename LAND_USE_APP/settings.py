@@ -88,7 +88,13 @@ INSTALLED_APPS = [
     "django.contrib.gis",          # GeoDjango
     "anymail",                     # Email
     "LAND_USE_PARCELS",            # Your app
-    # "session_security",            # Session security
+    # "session_security", 
+               # Session security
+    INSTALLED_APPS = [
+    # ...
+    'rest_framework',
+    'LAND_USE_PARCELS',
+]
 ]
 
 # ============================================================

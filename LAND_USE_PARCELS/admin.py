@@ -156,3 +156,10 @@ class SavedParcelLayerAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'name', 'created_at')
     list_filter = ('user', 'created_at')
     search_fields = ('name', 'user__email')
+
+
+
+@admin.register(Parcel)
+class ParcelAdmin(admin.ModelAdmin):
+    list_display = ('parcel_id', 'parcel_name', 'locked_by', 'locked_at', 'is_verified')
+    # ... other settings ...
