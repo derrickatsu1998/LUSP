@@ -87,7 +87,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",          # GeoDjango
     "anymail",                     # Email
-    "LAND_USE_PARCELS",            # Your app
+            # Your app
     # "session_security", 
                # Session security
     
