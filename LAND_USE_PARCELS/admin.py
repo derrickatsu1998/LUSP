@@ -151,11 +151,6 @@ class OTPCodeAdmin(admin.ModelAdmin):
 # SAVED PARCEL LAYER ADMIN
 # ============================================================
 
-@admin.register(SavedParcelLayer)
-class SavedParcelLayerAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'name', 'created_at')
-    list_filter = ('user', 'created_at')
-    search_fields = ('name', 'user__email')
 
 
 
