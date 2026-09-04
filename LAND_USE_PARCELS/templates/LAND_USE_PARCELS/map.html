@@ -1478,6 +1478,33 @@
                                     <div class="invalid-feedback">Please enter a Parcel ID.</div>
                                 </div>
                                 <div class="col-md-8"><label class="form-label" for="surveyParcelName">Parcel name</label><input class="form-control" id="surveyParcelName" name="parcel_name" maxlength="150" /></div>
+                                <!-- Street Name -->
+<div class="col-md-6">
+    <label class="form-label" for="surveyStreet">Street name</label>
+    <input class="form-control" id="surveyStreet" name="street" maxlength="100" placeholder="e.g. Independence Avenue" />
+</div>
+
+<!-- Master Plan Zone -->
+<div class="col-md-6">
+    <label class="form-label" for="surveyMasterPlanZone">Master Plan Zone</label>
+    <select class="form-select" id="surveyMasterPlanZone" name="master_plan_zone">
+        <option value="">Not specified</option>
+        <option value="RESIDENTIAL">Residential</option>
+        <option value="COMMERCIAL">Commercial</option>
+        <option value="INDUSTRIAL">Industrial</option>
+        <option value="MIXED_USE">Mixed Use</option>
+        <option value="AGRICULTURAL">Agricultural</option>
+        <option value="INSTITUTIONAL">Institutional</option>
+        <option value="RECREATIONAL">Recreational</option>
+        <option value="TRANSPORTATION">Transportation</option>
+        <option value="UTILITY">Utility</option>
+        <option value="VACANT">Vacant</option>
+        <option value="OTHER">Other</option>
+    </select>
+</div>
+                                
+
+
                                 <div class="col-8"><label class="form-label" for="surveySection">Section</label><input class="form-control" id="surveySection" name="section" maxlength="100" placeholder="e.g. North A" /></div>
                                 <div class="col-4"><label class="form-label" for="surveySectionNumber">Section no.</label><input class="form-control" id="surveySectionNumber" name="section_number" maxlength="50" /></div>
                                 <div class="col-md-6">
@@ -1747,6 +1774,83 @@
             $('#coordRaw').text(raw);
             $('#coordPanel').show();
         }
+
+
+
+
+                // ============================================================
+        // CSRF TOKEN HELPER
+        // ============================================================
+        function getCSRFToken() {
+            const name = 'csrftoken';
+            const cookie = document.cookie.split(';').find(c => c.trim().startsWith(name + '='));
+            return cookie ? cookie.split('=')[1] : '';
+        }
+
+        // ============================================================
+        // PARCEL LOCKING
+        // ============================================================
+        let currentLockParcelId = null;
+        let lockInterval = null;
+
+        async function acquireLock(parcelId) {
+            try {
+                const response = await fetch(`/api/parcels/${encodeURIComponent(parcelId)}/lock/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                    },
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    currentLockParcelId = parcelId;
+                    // Renew lock every 4 minutes
+                    if (lockInterval) clearInterval(lockInterval);
+                    lockInterval = setInterval(() => {
+                        renewLock(parcelId);
+                    }, 4 * 60 * 1000);
+                    return true;
+                } else {
+                    showToast(`❌ ${data.error || 'Parcel is locked'}`, 'danger');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Lock error:', error);
+                showToast('⚠️ Could not acquire lock', 'danger');
+                return false;
+            }
+        }
+
+        async function renewLock(parcelId) {
+            try {
+                await fetch(`/api/parcels/${encodeURIComponent(parcelId)}/lock/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCSRFToken() },
+                });
+            } catch (e) { /* ignore */ }
+        }
+
+        async function releaseLock(parcelId) {
+            if (lockInterval) {
+                clearInterval(lockInterval);
+                lockInterval = null;
+            }
+            if (!parcelId) return;
+            try {
+                await fetch(`/api/parcels/${encodeURIComponent(parcelId)}/lock/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': getCSRFToken() },
+                });
+            } catch (e) { /* ignore */ }
+            currentLockParcelId = null;
+        }
+
+        // Release lock when the survey modal is hidden
+        $('#parcelSurveyModal').on('hidden.bs.modal', function() {
+            if (currentLockParcelId) {
+                releaseLock(currentLockParcelId);
+            }
+        });
 
         // ============================================================
         // 7. GPS TRACKING (Original)
@@ -4234,8 +4338,13 @@
             $('#surveySection').val(values.section || '');
             $('#surveySectionNumber').val(values.section_number || '');
             $('#surveyLandUse').val(values.field_land_use || '');
-            $('#surveyStructureStatus').val(values.field_structure_status || '');
+            $('#surveyStructureStatus').val(values.field_structure_status || 
+            
+            '');
             $('#surveyNotes').val(values.field_notes || '');
+               $('#surveyStreet').val(values.street || '');
+            $('#surveyMasterPlanZone').val(values.master_plan_zone || '');
+}
             if (values.field_photo_url) {
                 $('#surveyPhotoPreview').attr('src', values.field_photo_url).removeClass('d-none');
             }
@@ -4265,8 +4374,25 @@
             }
         });
 
-        // ---- Open survey ----
+                // ---- Open survey ----
         async function openParcelSurvey(feature, leafletLayer) {
+            // ---- Acquire lock first ----
+            const parcelId = parcelIdForFeature(feature, leafletLayer);
+            const locked = await acquireLock(parcelId);
+            if (!locked) {
+                // Show a toast that the parcel is locked
+                showToast('⚠️ This parcel is being edited by another user.', 'warning');
+                // Optionally highlight the parcel in red
+                if (leafletLayer.setStyle) {
+                    leafletLayer.setStyle({ color: '#ff0000', weight: 4 });
+                    setTimeout(() => {
+                        leafletLayer.setStyle({ color: '#4caf50', weight: 2 });
+                    }, 3000);
+                }
+                return;
+            }
+
+            // ---- Continue with the rest of the function (reset form, load data, show modal) ----
             if (activeParcelLayer && activeParcelLayer !== leafletLayer && activeParcelLayer.setStyle) {
                 activeParcelLayer.setStyle(parcelStyle);
             }
@@ -4285,7 +4411,8 @@
             }
 
             const properties = feature.properties || {};
-            const parcelId = parcelIdForFeature(feature, leafletLayer);
+            // Use the same parcelId (already computed)
+            // const parcelId = parcelIdForFeature(feature, leafletLayer); // Remove this line – we already have it
             document.getElementById('parcelSurveyForm').reset();
             $('#surveyPhotoPreview').addClass('d-none').removeAttr('src');
             $('#surveyParcelId').val(parcelId);
@@ -4334,143 +4461,6 @@
                 }
             }
         }
-
-        $('#surveyPhoto').on('change', function() {
-            const photo = this.files && this.files[0];
-            if (!photo) return;
-            $('#surveyPhotoPreview').attr('src', URL.createObjectURL(photo)).removeClass('d-none');
-        });
-
-        // ---- Form submit with validation ----
-$('#parcelSurveyForm').on('submit', async function(event) {
-    event.preventDefault();
-
-    if (!this.checkValidity()) {
-        $(this).addClass('was-validated');
-        const firstInvalid = $(this).find(':invalid:first');
-        if (firstInvalid.length) {
-            firstInvalid.focus();
-        }
-        setSurveyStatus('Please fill in all required fields.', 'danger');
-        return;
-    }
-
-    const parcelId = $('#surveyParcelId').val().trim();
-    if (!parcelId) {
-        setSurveyStatus('Parcel ID is required.', 'danger');
-        $('#surveyParcelId').focus();
-        return;
-    }
-
-    const centre = activeParcelLayer ? parcelCentre(activeParcelLayer) : null;
-    const formData = new FormData(this);
-    if (centre) {
-        formData.set('latitude', centre.lat.toFixed(8));
-        formData.set('longitude', centre.lng.toFixed(8));
-    }
-    const structures = collectStructures();
-    formData.set('structures_json', JSON.stringify(structures));
-    formData.set('color', editedColor);
-
-    const button = $('#parcelSurveySaveBtn').prop('disabled', true);
-    setSurveyStatus('Saving survey…', 'info');
-
-    try {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        const response = await fetch(`/api/parcels/${encodeURIComponent(parcelId)}/survey/`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'same-origin',
-            headers: { 'X-CSRFToken': csrfToken }
-        });
-
-        // Try to parse the response as JSON
-        let data;
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            data = await response.json();
-        } else {
-            // If the response is not JSON, read as text (could be an HTML error page)
-            const text = await response.text();
-            throw new Error(`Server returned ${response.status}: ${text.substring(0, 100)}`);
-        }
-
-        if (!response.ok || !data.ok) {
-            // Use the server's error message if available
-            throw new Error(data.error || `Server error (${response.status})`);
-        }
-
-        // --- Success ---
-        // Update feature properties
-        activeParcelFeature.properties = {
-            ...(activeParcelFeature.properties || {}),
-            ...data.parcel.properties,
-            parcel_id: parcelId,
-            verified: true,
-            color: editedColor
-        };
-
-        // Update layer style
-        if (activeParcelLayer && activeParcelLayer.setStyle) {
-            activeParcelLayer.setStyle({
-                fillColor: editedColor,
-                color: editedColor,
-                weight: 3,
-                fillOpacity: 0.5
-            });
-        }
-
-        // Remove from parcelLayer if it's there
-        parcelLayer.removeLayer(activeParcelLayer);
-
-        // Create a new layer for edited
-        const newLayer = L.geoJSON(activeParcelFeature, {
-            style: {
-                color: editedColor,
-                weight: 3,
-                fillColor: editedColor,
-                fillOpacity: 0.5
-            }
-        });
-        newLayer.addTo(editedParcelLayer);
-
-        // Update activeParcelLayer to the new one
-        activeParcelLayer = newLayer;
-
-        // Attach click events to the new layer
-        newLayer.eachLayer(function(l) {
-            l.on({
-                click: function() {
-                    if (activeParcelFeature.properties && activeParcelFeature.properties.centroid) {
-                        activeParcelCentroid = activeParcelFeature.properties.centroid;
-                        if (userLocation) {
-                            updateParcelDistance(activeParcelCentroid);
-                        } else {
-                            $('#propDistance').text('Enable GPS');
-                            $('#propBearing').text('—');
-                            $('#navigateBtn').hide();
-                        }
-                    }
-                    openParcelSurvey(activeParcelFeature, l);
-                },
-                mouseover: function() { l.setStyle({ weight: 5, fillOpacity: 0.7 }); },
-                mouseout: function() { l.setStyle({ weight: 3, fillOpacity: 0.5 }); }
-            });
-        });
-
-        showToast(`✅ Parcel ${parcelId} saved (edited).`, 'success');
-        parcelSurveyModal.hide();
-
-    } catch (error) {
-        console.error('Save error:', error);
-        // Display the error message from the server or a fallback
-        const msg = error.message || 'The survey could not be saved.';
-        setSurveyStatus(msg, 'danger');
-        showToast('❌ ' + msg, 'danger');
-    } finally {
-        button.prop('disabled', false);
-    }
-});
         // ============================================================
         // SAVE CURRENT PARCELS
         // ============================================================
