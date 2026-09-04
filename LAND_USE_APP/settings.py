@@ -90,11 +90,10 @@ INSTALLED_APPS = [
     "LAND_USE_PARCELS",            # Your app
     # "session_security", 
                # Session security
-    INSTALLED_APPS = [
-    # ...
+    
     'rest_framework',
     'LAND_USE_PARCELS',
-]
+
 ]
 
 # ============================================================
