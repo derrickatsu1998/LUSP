@@ -950,6 +950,44 @@ body.dark-mode .gps-card .gps-status-bar {
     0% { transform: scale(1); opacity: 0.8; }
     100% { transform: scale(3); opacity: 0; }
 }
+
+/* Draggable GPS panel */
+#gpsNavContainer {
+    touch-action: none; /* prevent scroll while dragging */
+    cursor: grab;
+    user-select: none;
+    transition: box-shadow 0.2s;
+}
+#gpsNavContainer.dragging {
+    cursor: grabbing;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.25);
+}
+/* Floating toggle button */
+.gps-float-toggle {
+    background: rgba(15,23,42,0.9);
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(255,255,255,0.15);
+}
+.gps-float-toggle:hover {
+    transform: scale(1.05);
+    background: #0f172a;
+}
+.gps-float-toggle.active {
+    background: #2563eb;
+    box-shadow: 0 0 20px rgba(37,99,235,0.5);
+}
+/* Directions panel */
+#directionsPanel .step {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+#directionsPanel .step:last-child { border-bottom: none; }
+#directionsPanel .step-icon { font-size:20px; width:30px; text-align:center; }
+#directionsPanel .step-text { flex:1; }
+#directionsPanel .step-distance { color:#64748b; font-size:12px; }
         }
     </style>
 </head>
@@ -991,7 +1029,10 @@ body.dark-mode .gps-card .gps-status-bar {
         <div id="map" style="height:100%; width:100%; background:#e5e9f0;"></div>
     </div>
 
-    <!-- ============================================================
+    <!-- 
+    
+    
+    ============================================================
     GPS FLOATING BUTTON – FIXED POSITION (OUTSIDE CONTAINER)
     ============================================================ -->
     <button id="gpsFloatingBtn" onclick="toggleGPS()" title="Click to get your GPS location (or press G)" style="
@@ -1014,6 +1055,23 @@ body.dark-mode .gps-card .gps-status-bar {
     ">
         📡
     </button>
+
+    <!-- Floating Toggle Button (to show/hide the GPS panel) -->
+<button id="gpsToggleFloat" class="gps-float-toggle" style="position:absolute; bottom:20px; right:20px; z-index:1000; width:56px; height:56px; border-radius:50%; background:#0f172a; border:none; color:white; font-size:24px; box-shadow:0 4px 20px rgba(0,0,0,0.3); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">
+    🧭
+</button>
+
+<!-- Directions Panel (hidden by default) -->
+<div id="directionsPanel" style="display:none; position:absolute; bottom:80px; left:10px; right:10px; z-index:900; max-height:60vh; background:rgba(255,255,255,0.95); backdrop-filter:blur(16px); border-radius:20px; padding:16px; box-shadow:0 8px 40px rgba(0,0,0,0.2); overflow-y:auto; font-size:14px; border:1px solid rgba(255,255,255,0.3);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <strong style="font-size:16px;">🧭 Directions</strong>
+        <button id="closeDirections" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+    </div>
+    <div id="directionsContent" style="color:#1e293b;">
+        <p style="color:#94a3b8;">Select a parcel and tap "Get Directions" to see turn‑by‑turn instructions.</p>
+    </div>
+</div>
+
 
     <!-- GPS STATUS BADGE -->
     <div id="gpsStatusBadge" style="
@@ -1645,7 +1703,7 @@ body.dark-mode .gps-card .gps-status-bar {
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
 
-    <script>
+   <script>
         // ============================================================
         // 1. EPSG:2136
         // ============================================================
@@ -2298,8 +2356,264 @@ body.dark-mode .gps-card .gps-status-bar {
         });
 
         // ---- Also hook the existing toolbar GPS toggle button (if you have one) ----
-        // If you have a button with id="gpsToggle", we'll link it to toggleGPS.
         $('#gpsToggle').on('click', toggleGPS);
+
+        // ============================================================
+        // 17. FLOATING & DRAGGABLE COMPASS PANEL
+        // ============================================================
+        let isDragging = false;
+        let dragOffsetX = 0, dragOffsetY = 0;
+
+        function makeDraggable(element) {
+            const el = $(element);
+            el.css('position', 'absolute');
+            el.css('touch-action', 'none');
+
+            const onStart = (e) => {
+                if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return;
+                isDragging = true;
+                const rect = el[0].getBoundingClientRect();
+                const clientX = e.type.startsWith('touch') ? e.originalEvent.touches[0].clientX : e.clientX;
+                const clientY = e.type.startsWith('touch') ? e.originalEvent.touches[0].clientY : e.clientY;
+                dragOffsetX = clientX - rect.left;
+                dragOffsetY = clientY - rect.top;
+                el.addClass('dragging');
+                e.preventDefault();
+            };
+
+            const onMove = (e) => {
+                if (!isDragging) return;
+                const clientX = e.type.startsWith('touch') ? e.originalEvent.touches[0].clientX : e.clientX;
+                const clientY = e.type.startsWith('touch') ? e.originalEvent.touches[0].clientY : e.clientY;
+                let left = clientX - dragOffsetX;
+                let top = clientY - dragOffsetY;
+                const maxX = window.innerWidth - el.outerWidth();
+                const maxY = window.innerHeight - el.outerHeight();
+                left = Math.max(0, Math.min(left, maxX));
+                top = Math.max(0, Math.min(top, maxY));
+                el.css({ left: left + 'px', top: top + 'px' });
+                e.preventDefault();
+            };
+
+            const onEnd = () => {
+                isDragging = false;
+                el.removeClass('dragging');
+            };
+
+            el.on('mousedown', onStart);
+            $(document).on('mousemove', onMove);
+            $(document).on('mouseup', onEnd);
+
+            el.on('touchstart', onStart);
+            $(document).on('touchmove', onMove);
+            $(document).on('touchend', onEnd);
+        }
+
+        makeDraggable('#gpsNavContainer');
+
+        // ---- Toggle panel visibility ----
+        let panelVisible = localStorage.getItem('gpsPanelVisible') !== 'false';
+
+        function togglePanel() {
+            panelVisible = !panelVisible;
+            localStorage.setItem('gpsPanelVisible', panelVisible);
+            if (panelVisible) {
+                $('#gpsNavContainer').show();
+                $('#gpsToggleFloat').addClass('active');
+            } else {
+                $('#gpsNavContainer').hide();
+                $('#gpsToggleFloat').removeClass('active');
+            }
+        }
+
+        $('#gpsToggleFloat').on('click', togglePanel);
+
+        if (!panelVisible) {
+            $('#gpsNavContainer').hide();
+            $('#gpsToggleFloat').removeClass('active');
+        } else {
+            $('#gpsToggleFloat').addClass('active');
+        }
+
+        // ============================================================
+        // 18. ROAD DIRECTIONS (OSRM)
+        // ============================================================
+        let directionsRoute = null;
+        let directionsLayer = null;
+
+        async function getRoadDirections(fromLat, fromLng, toLat, toLng) {
+            const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson&steps=true`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.code !== 'Ok') throw new Error(data.message || 'Routing failed');
+                return data;
+            } catch (error) {
+                console.error('OSRM error:', error);
+                showToast('⚠️ Could not get directions: ' + error.message, 'danger');
+                return null;
+            }
+        }
+
+        function showDirections(directions) {
+            const container = $('#directionsContent');
+            container.empty();
+            if (!directions || !directions.routes || !directions.routes.length) {
+                container.html('<p style="color:#94a3b8;">No route found.</p>');
+                return;
+            }
+            const route = directions.routes[0];
+            const legs = route.legs[0];
+            const steps = legs.steps;
+            const totalDistance = legs.distance;
+            const totalTime = legs.duration;
+
+            const distKm = (totalDistance / 1000).toFixed(1);
+            const timeMin = Math.round(totalTime / 60);
+            container.append(`
+                <div style="padding:8px 0 12px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; font-weight:600;">
+                    <span>📏 ${distKm} km</span>
+                    <span>⏱ ${timeMin} min</span>
+                </div>
+            `);
+
+            steps.forEach((step) => {
+                const instruction = step.maneuver.instruction;
+                const distance = step.distance;
+                const distText = distance > 1000 ? (distance/1000).toFixed(1)+' km' : Math.round(distance)+' m';
+                const icon = getDirectionIcon(step.maneuver.type, step.maneuver.modifier);
+                container.append(`
+                    <div class="step">
+                        <span class="step-icon">${icon}</span>
+                        <span class="step-text">${instruction}</span>
+                        <span class="step-distance">${distText}</span>
+                    </div>
+                `);
+            });
+            $('#directionsPanel').show();
+        }
+
+        function getDirectionIcon(type, modifier) {
+            const map = {
+                'depart': '🚦',
+                'arrive': '🏁',
+                'turn': '↩️',
+                'continue': '⬆️',
+                'merge': '↗️',
+                'fork': '↗️',
+                'roundabout': '🔄',
+                'exit': '🚪',
+                'end of road': '🚧'
+            };
+            if (type === 'turn') {
+                if (modifier === 'left') return '⬅️';
+                if (modifier === 'right') return '➡️';
+                if (modifier === 'slight left') return '↖️';
+                if (modifier === 'slight right') return '↗️';
+                if (modifier === 'sharp left') return '⬅️';
+                if (modifier === 'sharp right') return '➡️';
+                return '↩️';
+            }
+            return map[type] || '📍';
+        }
+
+        // Inject "Get Directions" button into the GPS panel
+        $('#gpsNavContainer .gps-card').append(`
+            <button id="gpsDirectionsBtn" style="width:100%; margin-top:6px; padding:10px 0; background:linear-gradient(135deg,#7c3aed,#8b5cf6); color:white; border:none; border-radius:30px; font-size:13px; font-weight:600; cursor:pointer; display:none; transition:all 0.2s; box-shadow:0 2px 12px rgba(124,58,237,0.3);">
+                🗺️ Get Directions
+            </button>
+        `);
+
+        $('#closeDirections').on('click', function() {
+            $('#directionsPanel').hide();
+            if (directionsLayer) {
+                map.removeLayer(directionsLayer);
+                directionsLayer = null;
+            }
+        });
+
+        $('#gpsDirectionsBtn').on('click', async function() {
+            if (!activeParcelCentroid || !gpsLocation) {
+                showToast('Enable GPS and select a parcel first.', 'warning');
+                return;
+            }
+            const from = [gpsLocation.lat, gpsLocation.lng];
+            const to = [activeParcelCentroid.lat, activeParcelCentroid.lng];
+            showToast('🔄 Calculating route...', 'info');
+            const result = await getRoadDirections(from[0], from[1], to[0], to[1]);
+            if (result) {
+                showDirections(result);
+                if (directionsLayer) map.removeLayer(directionsLayer);
+                const routeCoords = result.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                directionsLayer = L.polyline(routeCoords, { color: '#7c3aed', weight: 5, opacity: 0.7 }).addTo(map);
+                map.fitBounds(directionsLayer.getBounds(), { padding: [50,50] });
+            }
+        });
+
+        function updateDirectionsButton() {
+            if (gpsLocation && activeParcelCentroid) {
+                $('#gpsDirectionsBtn').show();
+            } else {
+                $('#gpsDirectionsBtn').hide();
+            }
+        }
+
+        // ---- Combined override for updateParcelDistance ----
+        const origUpdateDist = updateParcelDistance;
+        updateParcelDistance = function(centroid) {
+            origUpdateDist(centroid);                     // original GPS/compass logic
+            updateDirectionsButton();                     // show/hide directions button
+            // Device orientation: update compass if heading available
+            if (deviceHeading !== null && centroid && gpsLocation) {
+                const from = turf.point([gpsLocation.lng, gpsLocation.lat]);
+                const to = turf.point([centroid.lng, centroid.lat]);
+                const bearing = turf.bearing(from, to);
+                const relative = (bearing - deviceHeading + 360) % 360;
+                $compassPointer.attr('transform', 'rotate(' + relative + ' 70 70)');
+            }
+        };
+
+        // Also update directions button when GPS position changes
+        const originalOnPos = onGPSPosition;
+        onGPSPosition = function(pos) {
+            originalOnPos(pos);
+            updateDirectionsButton();
+        };
+
+        // Initial call
+        setTimeout(updateDirectionsButton, 1000);
+
+        // ============================================================
+        // 19. DEVICE ORIENTATION (Compass reacts to phone turn)
+        // ============================================================
+        let deviceHeading = null;
+
+        if (window.DeviceOrientationEvent) {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(state => {
+                    if (state === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                    }
+                }).catch(console.warn);
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        }
+
+        function handleOrientation(event) {
+            const heading = event.webkitCompassHeading || event.alpha;
+            if (heading !== null && heading !== undefined) {
+                deviceHeading = heading;
+                // If no target or GPS, just show north-up (optional)
+                if (!activeParcelCentroid || !gpsLocation) {
+                    $compassPointer.attr('transform', 'rotate(' + (heading * -1) + ' 70 70)');
+                }
+                // Otherwise the combined override above will handle it
+            }
+        }
+
+        // ---- The rest of the file is unchanged (point plotting, drawing, parcel import, etc.) ----
+        // (The rest of your code continues from here...)
 
         // ============================================================
         // 8. CURSOR COORDINATE TRACKER
