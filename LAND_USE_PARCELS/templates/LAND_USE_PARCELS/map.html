@@ -1865,6 +1865,84 @@
         });
 
         // ============================================================
+        // REFRESH LOCK STATUS FOR ALL PARCELS
+        // ============================================================
+        async function refreshLockStatus() {
+            // Gather all parcel layers from parcelLayer, editedParcelLayer, savedParcelLayer
+            const allLayers = [];
+            parcelLayer.eachLayer(l => allLayers.push(l));
+            editedParcelLayer.eachLayer(l => allLayers.push(l));
+            savedParcelLayer.eachLayer(l => allLayers.push(l));
+
+            if (allLayers.length === 0) {
+                showToast('No parcels to refresh.', 'info');
+                return;
+            }
+
+            showToast(`🔄 Refreshing lock status for ${allLayers.length} parcels...`, 'info');
+
+            let checked = 0;
+            for (const layer of allLayers) {
+                if (!layer.feature) continue;
+                const parcelId = parcelIdForFeature(layer.feature, layer);
+                if (!parcelId || parcelId.startsWith('TEMP-')) continue;
+
+                try {
+                    const response = await fetch(`/api/parcels/${encodeURIComponent(parcelId)}/lock/`);
+                    if (!response.ok) continue;
+                    const data = await response.json();
+                    checked++;
+
+                    // Determine if locked by another user
+                    // We need the current user ID; we can get it from session or from a global variable
+                    // For simplicity, we assume the backend returns 'locked_by' and we compare with current user
+                    // You need to pass current user ID from Django template or session.
+                    // For demo, we check if locked and not owned by current user.
+                    // Replace 'currentUserId' with actual user ID from context.
+                    const currentUserId = window.currentUserId || 'unknown';
+                    const isLockedByOther = data.locked && data.locked_by && data.locked_by !== currentUserId;
+
+                    if (isLockedByOther) {
+                        // Set to red
+                        if (layer.setStyle) {
+                            layer._originalColor = layer._originalColor || layer.options.color || '#4caf50';
+                            layer.setStyle({
+                                color: '#ff0000',
+                                fillColor: '#ff0000',
+                                weight: 4,
+                                fillOpacity: 0.3
+                            });
+                            // Store reference for later revert
+                            if (!window._lockedLayers) window._lockedLayers = {};
+                            window._lockedLayers[parcelId] = layer;
+                        }
+                    } else {
+                        // Not locked, revert to original colour
+                        if (layer.setStyle && layer._originalColor) {
+                            const orig = layer._originalColor;
+                            layer.setStyle({
+                                color: orig,
+                                fillColor: orig,
+                                weight: 2,
+                                fillOpacity: 0.3
+                            });
+                            if (window._lockedLayers && window._lockedLayers[parcelId]) {
+                                delete window._lockedLayers[parcelId];
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Could not fetch lock for', parcelId, e);
+                }
+            }
+
+            showToast(`✅ Lock status refreshed (${checked} parcels checked).`, 'success');
+        }
+
+        // Optional: periodic refresh every 30 seconds
+        // setInterval(refreshLockStatus, 30000);
+
+        // ============================================================
         // 7. GPS TRACKING (Original)
         // ============================================================
         let watchId = null;
@@ -3957,49 +4035,36 @@
         }
 
         function navigateToParcel(parcelId, lat, lng) {
-    // 1. Close any open popups
-    map.closePopup();
-
-    // 2. Fly to the parcel centroid
-    map.flyTo([lat, lng], 18, { duration: 1.5 });
-
-    // 3. If GPS is active, draw a line
-    if (userLocation) {
-        const from = [userLocation.lat, userLocation.lng];
-        const to = [lat, lng];
-        // Remove old navigation line if any
-        if (navigateLine) {
-            map.removeLayer(navigateLine);
-            navigateLine = null;
+            map.closePopup();
+            map.flyTo([lat, lng], 18, { duration: 1.5 });
+            if (userLocation) {
+                const from = [userLocation.lat, userLocation.lng];
+                const to = [lat, lng];
+                if (navigateLine) {
+                    map.removeLayer(navigateLine);
+                    navigateLine = null;
+                }
+                navigateLine = L.polyline([from, to], {
+                    color: '#1a73e8',
+                    weight: 4,
+                    dashArray: '6,6',
+                    opacity: 0.8
+                }).addTo(map);
+                map.fitBounds(L.latLngBounds(from, to), { padding: [50, 50] });
+                showToast('📍 Navigation line drawn.', 'info');
+            } else {
+                showToast('📍 Parcel centered. Enable GPS for navigation line.', 'info');
+            }
+            const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'centroid-marker',
+                    html: `<div style="width:20px;height:20px;background:#ff4444;border:2px solid white;border-radius:50%;box-shadow:0 0 10px rgba(255,68,68,0.8);"></div>`,
+                    iconSize: [20,20],
+                    iconAnchor: [10,10]
+                })
+            }).addTo(map);
+            setTimeout(() => map.removeLayer(marker), 10000);
         }
-        navigateLine = L.polyline([from, to], {
-            color: '#1a73e8',
-            weight: 4,
-            dashArray: '6,6',
-            opacity: 0.8
-        }).addTo(map);
-        // Fit bounds
-        map.fitBounds(L.latLngBounds(from, to), { padding: [50, 50] });
-        showToast('📍 Navigation line drawn.', 'info');
-    } else {
-        showToast('📍 Parcel centered. Enable GPS for navigation line.', 'info');
-    }
-
-    // 4. Add a temporary marker at the parcel centroid
-    const marker = L.marker([lat, lng], {
-        icon: L.divIcon({
-            className: 'centroid-marker',
-            html: `<div style="width:20px;height:20px;background:#ff4444;border:2px solid white;border-radius:50%;box-shadow:0 0 10px rgba(255,68,68,0.8);"></div>`,
-            iconSize: [20,20],
-            iconAnchor: [10,10]
-        })
-    }).addTo(map);
-    // Remove after 10 seconds
-    setTimeout(() => map.removeLayer(marker), 10000);
-
-    // 5. Optionally open the survey modal for this parcel (if you have the feature)
-    // You can call openParcelSurvey(feature, layer) if you have the layer object.
-}
 
         // ============================================================
         // PARCEL IMPORT BUTTON (with centroid markers)
@@ -4055,7 +4120,6 @@
             });
             layer.addTo(parcelLayer);
 
-            // ---- ADD CENTROID MARKERS ----
             const centroids = parsedParcelGeoJSON.features
                 .filter(f => f.properties && f.properties.centroid)
                 .map(f => ({
@@ -4079,6 +4143,9 @@
             $('#parcelFileInput').val('');
             $('#parcelImportStatus').html('');
             $('#parcelPreviewContainer').hide();
+
+            // Refresh lock status after import
+            refreshLockStatus();
         });
 
         // ============================================================
@@ -4139,6 +4206,7 @@
                         const bounds = layer.getBounds();
                         if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
                     } catch (e) {}
+                    refreshLockStatus();
                 })
                 .catch(err => showToast('⚠️ Error loading edited parcels: ' + err.message, 'danger'));
         });
@@ -4307,19 +4375,19 @@
         }
 
         function applySurveyValues(values) {
-    $('#surveyParcelName').val(values.parcel_name || '');
-    $('#surveySection').val(values.section || '');
-    $('#surveySectionNumber').val(values.section_number || '');
-    $('#surveyLandUse').val(values.field_land_use || '');
-    $('#surveyStructureStatus').val(values.field_structure_status || '');
-    $('#surveyNotes').val(values.field_notes || '');
-    $('#surveyStreet').val(values.street || '');
-    $('#surveyMasterPlanZone').val(values.master_plan_zone || '');
+            $('#surveyParcelName').val(values.parcel_name || '');
+            $('#surveySection').val(values.section || '');
+            $('#surveySectionNumber').val(values.section_number || '');
+            $('#surveyLandUse').val(values.field_land_use || '');
+            $('#surveyStructureStatus').val(values.field_structure_status || '');
+            $('#surveyNotes').val(values.field_notes || '');
+            $('#surveyStreet').val(values.street || '');
+            $('#surveyMasterPlanZone').val(values.master_plan_zone || '');
 
-    if (values.field_photo_url) {
-        $('#surveyPhotoPreview').attr('src', values.field_photo_url).removeClass('d-none');
-    }
-}
+            if (values.field_photo_url) {
+                $('#surveyPhotoPreview').attr('src', values.field_photo_url).removeClass('d-none');
+            }
+        }
         const parcelStyle = {
             color: '#2e7d32', weight: 2, opacity: 1,
             fillColor: '#4caf50', fillOpacity: 0.3
@@ -4345,98 +4413,92 @@
 
                 // ---- Open survey ----
         async function openParcelSurvey(feature, leafletLayer) {
-    // ---- Acquire lock first ----
-    const parcelId = parcelIdForFeature(feature, leafletLayer);
-    const locked = await acquireLock(parcelId);
+            const parcelId = parcelIdForFeature(feature, leafletLayer);
+            const locked = await acquireLock(parcelId);
 
-    if (!locked) {
-        // Show a toast that the parcel is locked
-        showToast('⚠️ This parcel is being edited by another user.', 'warning');
+            if (!locked) {
+                showToast('⚠️ This parcel is being edited by another user.', 'warning');
 
-        // ---- PERMANENTLY CHANGE THE PARCEL TO RED (for other users) ----
-        if (leafletLayer.setStyle) {
-            // Store the original colour so we can revert later
-            leafletLayer._originalColor = leafletLayer.options.color || '#4caf50';
-            leafletLayer.setStyle({
-                color: '#ff0000',
-                fillColor: '#ff0000',
-                weight: 4,
-                fillOpacity: 0.3
+                if (leafletLayer.setStyle) {
+                    leafletLayer._originalColor = leafletLayer.options.color || '#4caf50';
+                    leafletLayer.setStyle({
+                        color: '#ff0000',
+                        fillColor: '#ff0000',
+                        weight: 4,
+                        fillOpacity: 0.3
+                    });
+                    if (!window._lockedLayers) window._lockedLayers = {};
+                    window._lockedLayers[parcelId] = leafletLayer;
+                }
+                return;
+            }
+
+            if (activeParcelLayer && activeParcelLayer !== leafletLayer && activeParcelLayer.setStyle) {
+                activeParcelLayer.setStyle(parcelStyle);
+            }
+            activeParcelFeature = feature;
+            activeParcelLayer = leafletLayer;
+            const isEdited = feature.properties && feature.properties.verified === true;
+            const savedColor = isEdited ? editedColor : '#4caf50';
+            activeParcelColor = savedColor;
+            if (leafletLayer.setStyle) {
+                leafletLayer.setStyle({
+                    fillColor: savedColor,
+                    color: savedColor,
+                    weight: 4,
+                    fillOpacity: 0.45
+                });
+            }
+
+            const properties = feature.properties || {};
+            document.getElementById('parcelSurveyForm').reset();
+            $('#surveyPhotoPreview').addClass('d-none').removeAttr('src');
+            $('#surveyParcelId').val(parcelId);
+            applySurveyValues({
+                parcel_name: propertyValue(properties, ['parcel_name', 'name', 'owner_name']),
+                section: propertyValue(properties, ['section']),
+                section_number: propertyValue(properties, ['section_number', 'section_no']),
+                field_land_use: propertyValue(properties, ['field_land_use', 'land_use']),
+                field_structure_status: propertyValue(properties, ['field_structure_status', 'structure_status']),
+                field_notes: propertyValue(properties, ['field_notes', 'notes'])
             });
-            // Store this layer so we can revert when lock is released
-            if (!window._lockedLayers) window._lockedLayers = {};
-            window._lockedLayers[parcelId] = leafletLayer;
-        }
-        return;
-    }
+            setSurveyStatus('Loading saved survey data…');
+            parcelSurveyModal.show();
 
-    // ---- If lock acquired, proceed as usual ----
-    if (activeParcelLayer && activeParcelLayer !== leafletLayer && activeParcelLayer.setStyle) {
-        activeParcelLayer.setStyle(parcelStyle);
-    }
-    activeParcelFeature = feature;
-    activeParcelLayer = leafletLayer;
-    const isEdited = feature.properties && feature.properties.verified === true;
-    const savedColor = isEdited ? editedColor : '#4caf50';
-    activeParcelColor = savedColor;
-    if (leafletLayer.setStyle) {
-        leafletLayer.setStyle({
-            fillColor: savedColor,
-            color: savedColor,
-            weight: 4,
-            fillOpacity: 0.45
-        });
-    }
+            if (parcelId.startsWith('TEMP-')) {
+                setSurveyStatus('Enter the official parcel ID, then save the field survey.', 'warning');
+                renderStructureCards([]);
+                return;
+            }
 
-    const properties = feature.properties || {};
-    document.getElementById('parcelSurveyForm').reset();
-    $('#surveyPhotoPreview').addClass('d-none').removeAttr('src');
-    $('#surveyParcelId').val(parcelId);
-    applySurveyValues({
-        parcel_name: propertyValue(properties, ['parcel_name', 'name', 'owner_name']),
-        section: propertyValue(properties, ['section']),
-        section_number: propertyValue(properties, ['section_number', 'section_no']),
-        field_land_use: propertyValue(properties, ['field_land_use', 'land_use']),
-        field_structure_status: propertyValue(properties, ['field_structure_status', 'structure_status']),
-        field_notes: propertyValue(properties, ['field_notes', 'notes'])
-    });
-    setSurveyStatus('Loading saved survey data…');
-    parcelSurveyModal.show();
-
-    if (parcelId.startsWith('TEMP-')) {
-        setSurveyStatus('Enter the official parcel ID, then save the field survey.', 'warning');
-        renderStructureCards([]);
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/parcels/${encodeURIComponent(parcelId)}/survey/`, { credentials: 'same-origin' });
-        const contentType = response.headers.get('content-type');
-        if (!response.ok || (contentType && contentType.includes('text/html'))) {
-            if (response.status === 302 || response.url && response.url.includes('request-otp')) {
-                throw new Error('Session expired. Please log in again.');
-            } else {
-                throw new Error('Server returned an error page.');
+            try {
+                const response = await fetch(`/api/parcels/${encodeURIComponent(parcelId)}/survey/`, { credentials: 'same-origin' });
+                const contentType = response.headers.get('content-type');
+                if (!response.ok || (contentType && contentType.includes('text/html'))) {
+                    if (response.status === 302 || response.url && response.url.includes('request-otp')) {
+                        throw new Error('Session expired. Please log in again.');
+                    } else {
+                        throw new Error('Server returned an error page.');
+                    }
+                }
+                const data = await response.json();
+                if (data.exists) {
+                    applySurveyValues(data);
+                    renderStructureCards(data.structures || []);
+                    setSurveyStatus('Existing survey data loaded.', 'success');
+                } else {
+                    renderStructureCards([]);
+                    setSurveyStatus('No saved survey yet. Complete the form to create one.', 'muted');
+                }
+            } catch (error) {
+                console.error(error);
+                renderStructureCards([]);
+                setSurveyStatus(error.message || 'Could not load survey data.', 'warning');
+                if (error.message.includes('Session expired')) {
+                    showToast('⚠️ Session expired. Please log in again.', 'danger');
+                }
             }
         }
-        const data = await response.json();
-        if (data.exists) {
-            applySurveyValues(data);
-            renderStructureCards(data.structures || []);
-            setSurveyStatus('Existing survey data loaded.', 'success');
-        } else {
-            renderStructureCards([]);
-            setSurveyStatus('No saved survey yet. Complete the form to create one.', 'muted');
-        }
-    } catch (error) {
-        console.error(error);
-        renderStructureCards([]);
-        setSurveyStatus(error.message || 'Could not load survey data.', 'warning');
-        if (error.message.includes('Session expired')) {
-            showToast('⚠️ Session expired. Please log in again.', 'danger');
-        }
-    }
-}
         // ============================================================
         // SAVE CURRENT PARCELS
         // ============================================================
@@ -4521,6 +4583,7 @@
                         const bounds = layer.getBounds();
                         if (bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
                     } catch (e) {}
+                    refreshLockStatus();
                 })
                 .catch(err => showToast('⚠️ Error loading saved layers: ' + err.message, 'danger'));
         });
@@ -4843,7 +4906,6 @@
         
                 function updateParcelDistance(centroid) {
             if (!userLocation || !centroid) {
-                // Reset all displays
                 $('#propDistance').text('—');
                 $('#propBearing').text('—');
                 $('#navigateBtn').hide();
@@ -4860,7 +4922,6 @@
             const distanceKm = turf.distance(from, to, { units: 'kilometers' });
             const bearing = turf.bearing(from, to);
 
-            // --- Update properties panel ---
             let unit = 'km';
             let displayDist = distanceKm.toFixed(2);
             if (distanceKm < 0.1) {
@@ -4872,18 +4933,13 @@
             $('#propBearing').text(bearing.toFixed(1) + '°');
             $('#navigateBtn').show();
 
-            // --- Update navigation panel ---
             $('#navDistance').text(displayDist + ' ' + unit);
-            // Cardinal direction
             const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
             const idx = Math.round(((bearing % 360) / 45)) % 8;
             const dir = dirs[idx];
             $('#navDirection').text(dir + ' (' + Math.round(bearing) + '°)');
-
-            // Rotate compass pointer (assumes compass SVG has id="compassPointer")
             $('#compassPointer').attr('transform', 'rotate(' + bearing + ' 70 70)');
 
-            // --- Estimated walking time (5 km/h) ---
             const speedKmh = 5;
             const timeHours = distanceKm / speedKmh;
             let timeDisplay = '';
@@ -4899,8 +4955,6 @@
                 timeDisplay = hours + 'h ' + minutes + 'm';
             }
             $('#navTime').text('⏱ ' + timeDisplay);
-
-            // Show the navigation container
             $('#gpsNavContainer').show();
         }
 
@@ -4916,15 +4970,13 @@
         let searchTimeout = null;
         let currentQuery = '';
 
-        // Create a geocoder instance (Nominatim)
         const geocoder = L.Control.Geocoder.nominatim({
             geocodingQueryParams: {
                 limit: 5,
-                countrycodes: 'gh'  // restrict to Ghana – remove if you want worldwide
+                countrycodes: 'gh'
             }
         });
 
-        // Show/hide clear button
         searchInput.addEventListener('input', function() {
             const val = this.value.trim();
             clearBtn.style.display = val ? 'block' : 'none';
@@ -4935,7 +4987,6 @@
             }
         });
 
-        // Fetch suggestions
         function fetchSuggestions(query) {
             if (searchTimeout) clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
@@ -4944,7 +4995,6 @@
                         searchSuggestions.style.display = 'none';
                         return;
                     }
-                    // Build suggestions list
                     let html = '';
                     results.forEach((r, idx) => {
                         const name = r.name || query;
@@ -4958,10 +5008,9 @@
                     searchSuggestions.innerHTML = html;
                     searchSuggestions.style.display = 'block';
 
-                    // Attach click event to suggestions
                     document.querySelectorAll('.suggestion-item').forEach(el => {
                         el.addEventListener('mousedown', function(e) {
-                            e.preventDefault(); // prevent blur
+                            e.preventDefault();
                             const lat = parseFloat(this.dataset.lat);
                             const lng = parseFloat(this.dataset.lng);
                             const name = this.dataset.name;
@@ -4969,7 +5018,6 @@
                             searchSuggestions.style.display = 'none';
                             flyToLocation(lat, lng, name);
                         });
-                        // Touch support
                         el.addEventListener('touchstart', function(e) {
                             const lat = parseFloat(this.dataset.lat);
                             const lng = parseFloat(this.dataset.lng);
@@ -4983,7 +5031,6 @@
             }, 300);
         }
 
-        // Clear button
         clearBtn.addEventListener('click', function() {
             searchInput.value = '';
             this.style.display = 'none';
@@ -4991,25 +5038,19 @@
             searchInput.focus();
         });
 
-        // Hide suggestions when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('#searchForm')) {
                 searchSuggestions.style.display = 'none';
             }
         });
 
-        // Main search function (form submit)
         function searchLocation(event) {
             event.preventDefault();
             const query = searchInput.value.trim();
             if (!query) return;
-            // Check if it's a parcel ID (pattern: alphanumeric with maybe dash)
             if (/^[A-Za-z0-9\-_]+$/.test(query)) {
-                // Try to find a parcel by ID on the map (if you have parcel layers)
-                // For now, treat as a place search
-                // You could extend this to search in your own data.
+                // optional parcel ID search – you can extend here
             }
-            // Geocode the query
             showToast('🔍 Searching for "' + query + '"...', 'info');
             geocoder.geocode(query, function(results) {
                 if (!results || results.length === 0) {
@@ -5023,15 +5064,11 @@
             });
         }
 
-        // Fly to a location and add a temporary marker
         function flyToLocation(lat, lng, name) {
-            // Smooth fly
             map.flyTo([lat, lng], 16, {
                 duration: 1.5,
                 easeLinearity: 0.25
             });
-
-            // Temporary marker
             const marker = L.marker([lat, lng], {
                 icon: L.divIcon({
                     className: 'search-marker',
@@ -5040,15 +5077,10 @@
                     iconAnchor: [11,11]
                 })
             }).addTo(map);
-
-            // Bind popup
             marker.bindPopup(`<strong>📍 ${name}</strong>`).openPopup();
-
-            // Remove after 6 seconds
             setTimeout(() => {
                 map.removeLayer(marker);
             }, 6000);
-
             showToast(`📍 Found: ${name}`, 'success');
         }
 
@@ -5056,7 +5088,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const isMobile = window.innerWidth <= 768;
 
-            // Point toolbar toggle
             const ptToggle = document.getElementById('ptToolbarToggle');
             const ptToolbar = document.getElementById('pointToolbar');
             if (ptToggle && ptToolbar) {
@@ -5067,7 +5098,6 @@
                 });
             }
 
-            // Layers panel toggle (bottom sheet)
             const layersToggle = document.getElementById('layersToggleMobile');
             const layersPanel = document.getElementById('layersPanel');
             if (layersToggle && layersPanel) {
@@ -5075,7 +5105,6 @@
                 layersToggle.addEventListener('click', function() {
                     layersPanel.classList.toggle('open');
                 });
-                // Close when clicking outside (optional)
                 document.addEventListener('click', function(e) {
                     if (layersPanel.classList.contains('open') && 
                         !layersPanel.contains(e.target) && 
@@ -5085,7 +5114,6 @@
                 });
             }
 
-            // Coordinate panel toggle
             const coordToggle = document.getElementById('coordToggleMobile');
             const coordPanel = document.getElementById('coordPanel');
             if (coordToggle && coordPanel) {
@@ -5095,7 +5123,6 @@
                 });
             }
 
-            // Adjust existing navbar: hide the old layers toggle on mobile
             if (isMobile) {
                 const layersToggleOld = document.getElementById('layersToggle');
                 if (layersToggleOld) layersToggleOld.style.display = 'none';
