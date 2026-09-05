@@ -911,6 +911,45 @@
             .toast {
                 font-size: 0.75rem !important;
             }
+            /* GPS Navigation Card */
+.gps-card {
+    transition: all 0.3s ease;
+}
+.gps-card:hover {
+    box-shadow: 0 16px 56px rgba(0,0,0,0.2);
+}
+.gps-btn {
+    transition: all 0.2s;
+}
+.gps-btn:hover {
+    transform: scale(1.02);
+    opacity: 0.9;
+}
+/* Dark mode support */
+body.dark-mode .gps-card {
+    background: rgba(30,41,59,0.92) !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+body.dark-mode .gps-card div {
+    color: #e2e8f0 !important;
+}
+body.dark-mode .gps-card .gps-status-bar {
+    background: rgba(51,65,85,0.6) !important;
+}
+/* User location marker animations */
+.user-location-marker .marker-dot {
+    width: 12px; height: 12px; background: #2563eb; border-radius: 50%;
+    border: 2px solid white; box-shadow: 0 0 0 4px rgba(37,99,235,0.3);
+}
+.user-location-marker .marker-pulse {
+    position: absolute; width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid #2563eb; animation: pulse 1.8s ease-out infinite;
+    top: -2px; left: -2px;
+}
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(3); opacity: 0; }
+}
         }
     </style>
 </head>
@@ -998,51 +1037,76 @@
     <!-- ============================================================
     GPS NAVIGATION INTERFACE
     ============================================================ -->
-    <div id="gpsNavContainer" style="display:none; position:absolute; bottom:120px; right:12px; z-index:950; width:200px;">
-        <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-radius: 20px; padding: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.3); text-align: center;">
-            <div style="position:relative; width:140px; height:140px; margin:0 auto;">
-                <svg viewBox="0 0 140 140" style="width:140px; height:140px;">
-                    <circle cx="70" cy="70" r="68" fill="none" stroke="#1a1a2e" stroke-width="2" opacity="0.1"/>
-                    <circle cx="70" cy="70" r="60" fill="none" stroke="#1a1a2e" stroke-width="1" opacity="0.05"/>
-                    <text x="70" y="12" text-anchor="middle" font-size="12" font-weight="bold" fill="#ff4444">N</text>
-                    <text x="70" y="136" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a2e">S</text>
-                    <text x="130" y="76" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a2e">E</text>
-                    <text x="10" y="76" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a2e">W</text>
-                    <text x="112" y="20" text-anchor="middle" font-size="8" fill="#666">NE</text>
-                    <text x="28" y="20" text-anchor="middle" font-size="8" fill="#666">NW</text>
-                    <text x="112" y="128" text-anchor="middle" font-size="8" fill="#666">SE</text>
-                    <text x="28" y="128" text-anchor="middle" font-size="8" fill="#666">SW</text>
-                    <g id="compassPointer" transform="rotate(0 70 70)">
-                        <line x1="70" y1="70" x2="70" y2="20" stroke="#ff4444" stroke-width="3" stroke-linecap="round"/>
-                        <polygon points="70,14 66,24 74,24" fill="#ff4444"/>
-                        <line x1="70" y1="70" x2="70" y2="120" stroke="#1a1a2e" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
-                    </g>
-                    <circle cx="70" cy="70" r="6" fill="#1a1a2e"/>
-                    <circle cx="70" cy="70" r="3" fill="#ff4444"/>
-                </svg>
-            </div>
-            <div style="margin-top:8px;">
-                <div style="font-size:12px; color:#64748b;">Distance to Parcel</div>
-                <div style="font-size:18px; font-weight:700; color:#0f172a;" id="navDistance">--</div>
-                <div style="font-size:11px; color:#94a3b8;" id="navDirection">--</div>
-            </div>
-                        <div style="margin-top:8px;">
-                <div style="font-size:12px; color:#64748b;">Distance to Parcel</div>
-                <div style="font-size:18px; font-weight:700; color:#0f172a;" id="navDistance">--</div>
-                <div style="font-size:11px; color:#94a3b8;" id="navDirection">--</div>
-                <div style="font-size:12px; color:#64748b; margin-top:2px;" id="navTime">⏱ --</div>
-            </div>
-            <div style="margin-top:8px; padding:4px 12px; border-radius:20px; background:#f1f5f9; font-size:11px; display:flex; align-items:center; justify-content:center; gap:8px;">
-                <span id="gpsDot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#94a3b8;"></span>
-                <span id="gpsStatusText">GPS: Off</span>
-            </div>
-            <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
-                <button id="gpsStartBtn" style="flex:1; padding:8px 10px; background:#0f172a; color:white; border:none; border-radius:10px; font-size:11px; font-weight:600; cursor:pointer;">📡 Start GPS</button>
-                <button id="gpsStopBtn" style="flex:1; padding:8px 10px; background:#dc2626; color:white; border:none; border-radius:10px; font-size:11px; font-weight:600; cursor:pointer; display:none;">⏹ Stop</button>
-            </div>
-            <button id="gpsNavigateBtn" style="width:100%; margin-top:6px; padding:6px 10px; background:#2563eb; color:white; border:none; border-radius:10px; font-size:11px; font-weight:600; cursor:pointer; display:none;">🧭 Navigate to Parcel</button>
+    <div id="gpsNavContainer" style="display:none; position:absolute; bottom:120px; right:16px; z-index:950; width:220px; font-family:'Segoe UI',system-ui,sans-serif;">
+    <div class="gps-card" style="background: rgba(255,255,255,0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 24px; padding: 18px 16px 16px; box-shadow: 0 12px 48px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04); transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.3);">
+        
+        <!-- Compass -->
+        <div style="position:relative; width:140px; height:140px; margin:0 auto 10px;">
+            <svg viewBox="0 0 140 140" style="width:140px; height:140px; display:block;">
+                <!-- Outer rings -->
+                <circle cx="70" cy="70" r="66" fill="none" stroke="rgba(15,23,42,0.06)" stroke-width="2"/>
+                <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(15,23,42,0.04)" stroke-width="1" stroke-dasharray="2 2"/>
+                <!-- Cardinal points -->
+                <text x="70" y="14" text-anchor="middle" font-size="12" font-weight="700" fill="#ef4444" style="font-family:inherit;">N</text>
+                <text x="70" y="134" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">S</text>
+                <text x="132" y="76" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">E</text>
+                <text x="8" y="76" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">W</text>
+                <!-- Intercardinal -->
+                <text x="112" y="22" text-anchor="middle" font-size="8" fill="#94a3b8">NE</text>
+                <text x="28" y="22" text-anchor="middle" font-size="8" fill="#94a3b8">NW</text>
+                <text x="112" y="126" text-anchor="middle" font-size="8" fill="#94a3b8">SE</text>
+                <text x="28" y="126" text-anchor="middle" font-size="8" fill="#94a3b8">SW</text>
+                <!-- Compass needle (rotating group) -->
+                <g id="compassPointer" transform="rotate(0 70 70)">
+                    <!-- Red half -->
+                    <line x1="70" y1="70" x2="70" y2="18" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+                    <polygon points="70,12 65,24 75,24" fill="#ef4444"/>
+                    <!-- Grey half -->
+                    <line x1="70" y1="70" x2="70" y2="122" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"/>
+                    <polygon points="70,128 65,116 75,116" fill="#64748b"/>
+                    <!-- Centre dot -->
+                    <circle cx="70" cy="70" r="5" fill="#0f172a"/>
+                    <circle cx="70" cy="70" r="2.5" fill="#ef4444"/>
+                </g>
+            </svg>
+            <!-- Accuracy ring (optional overlay) -->
+            <div id="gpsAccuracyRing" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:120px; height:120px; border-radius:50%; border:2px solid rgba(34,197,94,0.2); pointer-events:none; transition:all 0.4s;"></div>
         </div>
+
+        <!-- Info rows -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; text-align:center; margin-bottom:10px;">
+            <div>
+                <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#94a3b8;">Distance</div>
+                <div style="font-size:18px; font-weight:700; color:#0f172a;" id="navDistance">--</div>
+            </div>
+            <div>
+                <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#94a3b8;">Bearing</div>
+                <div style="font-size:18px; font-weight:700; color:#0f172a;" id="navBearing">--</div>
+            </div>
+            <div style="grid-column: span 2;">
+                <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#94a3b8;">ETA (walking)</div>
+                <div style="font-size:15px; font-weight:600; color:#0f172a;" id="navTime">⏱ --</div>
+            </div>
+        </div>
+
+        <!-- GPS status bar -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 12px; background:rgba(241,245,249,0.6); border-radius:30px; margin-bottom:10px; font-size:11px; gap:8px;">
+            <span style="display:flex; align-items:center; gap:6px;">
+                <span id="gpsDot" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#94a3b8; transition:background 0.3s;"></span>
+                <span id="gpsStatusText" style="color:#334155; font-weight:500;">GPS: Off</span>
+            </span>
+            <span id="gpsAccuracyText" style="color:#64748b; font-size:10px;">--</span>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button id="gpsStartBtn" class="gps-btn" style="flex:1; padding:10px 0; background:#0f172a; color:white; border:none; border-radius:30px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; box-shadow:0 2px 8px rgba(15,23,42,0.15);">📡 Start GPS</button>
+            <button id="gpsStopBtn" class="gps-btn" style="flex:1; padding:10px 0; background:#dc2626; color:white; border:none; border-radius:30px; font-size:12px; font-weight:600; cursor:pointer; display:none; transition:all 0.2s;">⏹ Stop</button>
+            <button id="gpsFollowBtn" class="gps-btn" style="flex:1; padding:10px 0; background:#2563eb; color:white; border:none; border-radius:30px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; display:none;">📍 Follow</button>
+        </div>
+        <button id="gpsNavigateBtn" style="width:100%; margin-top:8px; padding:10px 0; background:linear-gradient(135deg,#059669,#10b981); color:white; border:none; border-radius:30px; font-size:13px; font-weight:600; cursor:pointer; display:none; transition:all 0.2s; box-shadow:0 2px 12px rgba(5,150,105,0.3);">🧭 Navigate to Parcel</button>
     </div>
+</div>
 
     <!-- ============================================================
     POINT TOOLBAR
@@ -1893,17 +1957,10 @@
                     const data = await response.json();
                     checked++;
 
-                    // Determine if locked by another user
-                    // We need the current user ID; we can get it from session or from a global variable
-                    // For simplicity, we assume the backend returns 'locked_by' and we compare with current user
-                    // You need to pass current user ID from Django template or session.
-                    // For demo, we check if locked and not owned by current user.
-                    // Replace 'currentUserId' with actual user ID from context.
                     const currentUserId = window.currentUserId || 'unknown';
                     const isLockedByOther = data.locked && data.locked_by && data.locked_by !== currentUserId;
 
                     if (isLockedByOther) {
-                        // Set to red
                         if (layer.setStyle) {
                             layer._originalColor = layer._originalColor || layer.options.color || '#4caf50';
                             layer.setStyle({
@@ -1912,12 +1969,10 @@
                                 weight: 4,
                                 fillOpacity: 0.3
                             });
-                            // Store reference for later revert
                             if (!window._lockedLayers) window._lockedLayers = {};
                             window._lockedLayers[parcelId] = layer;
                         }
                     } else {
-                        // Not locked, revert to original colour
                         if (layer.setStyle && layer._originalColor) {
                             const orig = layer._originalColor;
                             layer.setStyle({
@@ -1939,161 +1994,312 @@
             showToast(`✅ Lock status refreshed (${checked} parcels checked).`, 'success');
         }
 
-        // Optional: periodic refresh every 30 seconds
-        // setInterval(refreshLockStatus, 30000);
-
         // ============================================================
-        // 7. GPS TRACKING (Original)
+        // 7. ENHANCED GPS TRACKING (Enterprise)
         // ============================================================
-        let watchId = null;
-        let userMarker = null;
-        let userAccuracy = null;
-        let userLocation = null;
+        let gpsWatchId = null;
+        let gpsLocation = null;
+        let gpsMarker = null;
+        let gpsCircle = null;
+        let gpsAccuracyRing = null;
+        let followGps = false;
         let isGpsActive = false;
         let navigateLine = null;
         let activeParcelCentroid = null;
 
-        function updateGPSStatus(active) {
-            isGpsActive = active;
-            const btn = $('#gpsToggle');
-            if (active) {
-                btn.addClass('gps-active');
-                btn.html('<i class="bi bi-satellite-fill"></i>');
-                $('#gpsStatus').show();
-                showToast('📍 GPS tracking started.', 'success');
+        // DOM references (for the new panel)
+        const $gpsNav = $('#gpsNavContainer');
+        const $gpsStartBtn = $('#gpsStartBtn');
+        const $gpsStopBtn = $('#gpsStopBtn');
+        const $gpsFollowBtn = $('#gpsFollowBtn');
+        const $gpsNavigateBtn = $('#gpsNavigateBtn');
+        const $gpsDot = $('#gpsDot');
+        const $gpsStatusText = $('#gpsStatusText');
+        const $gpsAccuracyText = $('#gpsAccuracyText');
+        const $gpsAccuracyRing = $('#gpsAccuracyRing');
+        const $navDistance = $('#navDistance');
+        const $navBearing = $('#navBearing');
+        const $navTime = $('#navTime');
+        const $compassPointer = $('#compassPointer');
+
+        // ---- GPS controls ----
+        function toggleGPS() {
+            if (gpsWatchId) {
+                stopGPS();
             } else {
-                btn.removeClass('gps-active');
-                btn.html('<i class="bi bi-satellite"></i>');
-                $('#gpsStatus').hide();
-                if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
-                if (userAccuracy) { map.removeLayer(userAccuracy); userAccuracy = null; }
-                if (navigateLine) { map.removeLayer(navigateLine); navigateLine = null; }
-                userLocation = null;
-                showToast('GPS tracking stopped.', 'info');
+                startGPS();
             }
         }
 
         function startGPS() {
             if (!navigator.geolocation) {
-                showToast('Geolocation is not supported.', 'danger');
+                showToast('Geolocation not supported.', 'danger');
                 return;
             }
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
+            if (gpsWatchId) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                gpsWatchId = null;
             }
-            watchId = navigator.geolocation.watchPosition(
-                function(pos) {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    const accuracy = pos.coords.accuracy;
-                    userLocation = { lat, lng };
-                    if (!userMarker) {
-                        const icon = L.divIcon({
-                            className: 'user-location-marker',
-                            html: '<div class="user-location-pulse"></div>',
-                            iconSize: [16, 16],
-                            iconAnchor: [8, 8]
-                        });
-                        userMarker = L.marker([lat, lng], { icon: icon }).addTo(map);
-                        userAccuracy = L.circle([lat, lng], {
-                            radius: accuracy,
-                            color: '#1a73e8',
-                            fillColor: '#1a73e8',
-                            fillOpacity: 0.15,
-                            weight: 1,
-                            interactive: false
-                        }).addTo(map);
-                    } else {
-                        userMarker.setLatLng([lat, lng]);
-                        if (userAccuracy) {
-                            userAccuracy.setLatLng([lat, lng]);
-                            userAccuracy.setRadius(accuracy);
-                        }
-                    }
-                    if (activeParcelCentroid) {
-                        updateParcelDistance(activeParcelCentroid);
-                    }
-                },
-                function(err) {
-                    console.warn('GPS error:', err);
-                    showToast('Error getting location: ' + err.message, 'warning');
-                    updateGPSStatus(false);
-                }, {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 5000
-                }
+            gpsWatchId = navigator.geolocation.watchPosition(
+                onGPSPosition,
+                onGPSError,
+                { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
             );
-            updateGPSStatus(true);
+            isGpsActive = true;
+            updateGPSUI('searching');
+            showToast('📍 GPS started – acquiring signal...', 'info');
         }
 
         function stopGPS() {
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
+            if (gpsWatchId) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                gpsWatchId = null;
             }
-            updateGPSStatus(false);
+            isGpsActive = false;
+            gpsLocation = null;
+            followGps = false;
+            clearLocationLayers();
+            updateGPSUI('off');
+            showToast('GPS stopped.', 'info');
         }
 
-        $('#gpsToggle').on('click', function() {
-            if (isGpsActive) {
-                stopGPS();
-            } else {
-                startGPS();
-            }
-        });
+        function onGPSPosition(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const accuracy = pos.coords.accuracy;
+            const altitude = pos.coords.altitude;
+            const heading = pos.coords.heading;
+            const speed = pos.coords.speed;
 
-        function updateParcelDistance(centroid) {
-            if (!userLocation || !centroid) {
-                $('#propDistance').text('—');
-                $('#propBearing').text('—');
-                $('#navigateBtn').hide();
-                return;
-            }
-            const from = turf.point([userLocation.lng, userLocation.lat]);
-            const to = turf.point([centroid.lng, centroid.lat]);
-            const distance = turf.distance(from, to, { units: 'kilometers' });
-            const bearing = turf.bearing(from, to);
-            let unit = 'km';
-            let display = distance.toFixed(2);
-            if (distance < 0.1) {
-                const meters = distance * 1000;
-                unit = 'm';
-                display = meters.toFixed(0);
-            }
-            $('#propDistance').text(display + ' ' + unit);
-            $('#propBearing').text(bearing.toFixed(1) + '°');
-            $('#navigateBtn').show();
-        }
+            gpsLocation = { lat, lng, accuracy, altitude, heading, speed };
+            updateGPSUI('active', accuracy);
+            updateLocationMarker(lat, lng, accuracy);
 
-        function navigateTo(centroid) {
-            if (!userLocation) {
-                showToast('Please enable GPS first.', 'warning');
-                return;
-            }
-            if (navigateLine) {
-                map.removeLayer(navigateLine);
-                navigateLine = null;
-            }
-            const from = [userLocation.lat, userLocation.lng];
-            const to = [centroid.lat, centroid.lng];
-            navigateLine = L.polyline([from, to], {
-                color: '#1a73e8',
-                weight: 4,
-                dashArray: '6,6',
-                opacity: 0.8
-            }).addTo(map);
-            const bounds = L.latLngBounds(from, to);
-            map.fitBounds(bounds, { padding: [50, 50] });
-            showToast('📍 Navigation line drawn.', 'info');
-        }
-
-        $('#navigateBtn').on('click', function() {
             if (activeParcelCentroid) {
-                navigateTo(activeParcelCentroid);
+                updateParcelDistance(activeParcelCentroid);
+            }
+
+            if (followGps) {
+                map.flyTo([lat, lng], 18, { duration: 1.5 });
+            }
+        }
+
+        function onGPSError(err) {
+            console.warn('GPS error:', err);
+            let msg = 'GPS error';
+            switch(err.code) {
+                case err.PERMISSION_DENIED: msg = 'Location permission denied.'; break;
+                case err.POSITION_UNAVAILABLE: msg = 'Signal unavailable. Try going outside.'; break;
+                case err.TIMEOUT: msg = 'GPS timed out.'; break;
+                default: msg = err.message;
+            }
+            showToast('⚠️ ' + msg, 'warning');
+            updateGPSUI('error');
+            if (gpsWatchId) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                gpsWatchId = null;
+                isGpsActive = false;
+                updateGPSUI('off');
+            }
+        }
+
+        function updateGPSUI(state, accuracy) {
+            const $dot = $gpsDot;
+            const $status = $gpsStatusText;
+            const $acc = $gpsAccuracyText;
+            const $ring = $gpsAccuracyRing;
+
+            $gpsStartBtn.hide();
+            $gpsStopBtn.hide();
+            $gpsFollowBtn.hide();
+
+            switch(state) {
+                case 'searching':
+                    $dot.css('background', '#f59e0b').css('box-shadow', '0 0 8px #f59e0b');
+                    $status.text('GPS: Searching...');
+                    $acc.text('--');
+                    $ring.css('border-color', 'rgba(245,158,11,0.3)');
+                    $gpsStopBtn.show();
+                    break;
+                case 'active':
+                    $dot.css('background', '#22c55e').css('box-shadow', '0 0 12px rgba(34,197,94,0.6)');
+                    $status.text('GPS: Active');
+                    if (accuracy) {
+                        let accText = accuracy < 10 ? 'Excellent' : accuracy < 30 ? 'Good' : accuracy < 100 ? 'Fair' : 'Low';
+                        $acc.text(`${accText} ±${Math.round(accuracy)}m`);
+                        $ring.css('border-color', accuracy < 10 ? 'rgba(34,197,94,0.4)' : accuracy < 30 ? 'rgba(34,197,94,0.25)' : 'rgba(245,158,11,0.25)');
+                    }
+                    $gpsStopBtn.show();
+                    $gpsFollowBtn.show().text(followGps ? '📍 Following' : '📍 Follow');
+                    $gpsFollowBtn.css('background', followGps ? '#059669' : '#2563eb');
+                    break;
+                case 'error':
+                    $dot.css('background', '#ef4444').css('box-shadow', '0 0 8px #ef4444');
+                    $status.text('GPS: Error');
+                    $acc.text('--');
+                    $ring.css('border-color', 'rgba(239,68,68,0.3)');
+                    $gpsStartBtn.show();
+                    break;
+                case 'off':
+                default:
+                    $dot.css('background', '#94a3b8').css('box-shadow', 'none');
+                    $status.text('GPS: Off');
+                    $acc.text('--');
+                    $ring.css('border-color', 'rgba(148,163,184,0.2)');
+                    $gpsStartBtn.show();
+                    break;
+            }
+            if (activeParcelCentroid && isGpsActive) {
+                $gpsNavigateBtn.show();
+            } else {
+                $gpsNavigateBtn.hide();
+            }
+            if (isGpsActive || activeParcelCentroid) {
+                $gpsNav.show();
+            } else {
+                $gpsNav.hide();
+            }
+        }
+
+        // ---- Update distance, bearing, ETA (for the new panel) ----
+        function updateParcelDistance(centroid) {
+            if (!centroid) {
+                $navDistance.text('--');
+                $navBearing.text('--');
+                $navTime.text('⏱ --');
+                $compassPointer.attr('transform', 'rotate(0 70 70)');
+                $gpsNavigateBtn.hide();
+                return;
+            }
+
+            if (!gpsLocation) {
+                $navDistance.text('No GPS');
+                $navBearing.text('--');
+                $navTime.text('⏱ --');
+                $compassPointer.attr('transform', 'rotate(0 70 70)');
+                $gpsNavigateBtn.hide();
+                return;
+            }
+
+            const from = turf.point([gpsLocation.lng, gpsLocation.lat]);
+            const to = turf.point([centroid.lng, centroid.lat]);
+            const distanceKm = turf.distance(from, to, { units: 'kilometers' });
+            const bearing = turf.bearing(from, to);
+
+            let unit = 'km';
+            let displayDist = distanceKm.toFixed(2);
+            if (distanceKm < 0.1) {
+                const meters = distanceKm * 1000;
+                unit = 'm';
+                displayDist = meters.toFixed(0);
+            }
+            $navDistance.text(displayDist + ' ' + unit);
+            $navBearing.text(Math.round(bearing) + '°');
+
+            $compassPointer.css('transition', 'transform 0.3s ease');
+            $compassPointer.attr('transform', 'rotate(' + bearing + ' 70 70)');
+
+            const speedKmh = 5;
+            const timeHours = distanceKm / speedKmh;
+            let timeDisplay = '';
+            if (timeHours < 1/60) {
+                const seconds = Math.round(timeHours * 3600);
+                timeDisplay = seconds + ' sec';
+            } else if (timeHours < 1) {
+                const minutes = Math.round(timeHours * 60);
+                timeDisplay = minutes + ' min';
+            } else {
+                const hours = Math.floor(timeHours);
+                const minutes = Math.round((timeHours - hours) * 60);
+                timeDisplay = hours + 'h ' + minutes + 'm';
+            }
+            $navTime.text('⏱ ' + timeDisplay);
+            $gpsNavigateBtn.show();
+        }
+
+        // ---- Location marker ----
+        function updateLocationMarker(lat, lng, accuracy) {
+            clearLocationLayers();
+            const icon = L.divIcon({
+                className: 'user-location-marker',
+                html: `<div class="marker-dot"></div><div class="marker-pulse"></div><div class="marker-pulse" style="animation-delay:0.5s;"></div>`,
+                iconSize: [20,20],
+                iconAnchor: [10,10]
+            });
+            gpsMarker = L.marker([lat, lng], { icon }).addTo(map);
+            gpsCircle = L.circle([lat, lng], {
+                radius: accuracy || 10,
+                color: '#2563eb',
+                fillColor: '#2563eb',
+                fillOpacity: 0.08,
+                weight: 2,
+                opacity: 0.5,
+                className: 'gps-accuracy-circle'
+            }).addTo(map);
+        }
+
+        function clearLocationLayers() {
+            if (gpsMarker) { map.removeLayer(gpsMarker); gpsMarker = null; }
+            if (gpsCircle) { map.removeLayer(gpsCircle); gpsCircle = null; }
+        }
+
+        // ---- Navigate to parcel (enhanced) ----
+        function navigateToParcel(parcelId, lat, lng) {
+            map.closePopup();
+            map.flyTo([lat, lng], 18, { duration: 1.5 });
+            activeParcelCentroid = { lat, lng };
+            if (gpsLocation) {
+                const from = [gpsLocation.lat, gpsLocation.lng];
+                const to = [lat, lng];
+                if (navigateLine) {
+                    map.removeLayer(navigateLine);
+                    navigateLine = null;
+                }
+                navigateLine = L.polyline([from, to], {
+                    color: '#2563eb',
+                    weight: 4,
+                    dashArray: '6,6',
+                    opacity: 0.8
+                }).addTo(map);
+                map.fitBounds(L.latLngBounds(from, to), { padding: [50,50] });
+                showToast('📍 Navigation line drawn.', 'info');
+                updateParcelDistance(activeParcelCentroid);
+            } else {
+                showToast('📍 Parcel centered. Enable GPS for navigation.', 'info');
+                updateParcelDistance(activeParcelCentroid);
+            }
+            const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'centroid-marker',
+                    html: `<div style="width:20px;height:20px;background:#ff4444;border:2px solid white;border-radius:50%;box-shadow:0 0 10px rgba(255,68,68,0.8);"></div>`,
+                    iconSize: [20,20],
+                    iconAnchor: [10,10]
+                })
+            }).addTo(map);
+            setTimeout(() => map.removeLayer(marker), 10000);
+            $gpsNav.show();
+        }
+
+        // ---- Button event listeners ----
+        $gpsStartBtn.on('click', startGPS);
+        $gpsStopBtn.on('click', stopGPS);
+        $gpsFollowBtn.on('click', function() {
+            followGps = !followGps;
+            if (followGps && gpsLocation) {
+                map.flyTo([gpsLocation.lat, gpsLocation.lng], 18, { duration: 1 });
+            }
+            updateGPSUI('active', gpsLocation?.accuracy);
+            showToast(followGps ? '📍 Follow ON' : '📍 Follow OFF', 'info');
+        });
+        $gpsNavigateBtn.on('click', function() {
+            if (activeParcelCentroid) {
+                navigateToParcel('target', activeParcelCentroid.lat, activeParcelCentroid.lng);
             }
         });
+
+        // ---- Also hook the existing toolbar GPS toggle button (if you have one) ----
+        // If you have a button with id="gpsToggle", we'll link it to toggleGPS.
+        $('#gpsToggle').on('click', toggleGPS);
 
         // ============================================================
         // 8. CURSOR COORDINATE TRACKER
@@ -4034,38 +4240,6 @@
             });
         }
 
-        function navigateToParcel(parcelId, lat, lng) {
-            map.closePopup();
-            map.flyTo([lat, lng], 18, { duration: 1.5 });
-            if (userLocation) {
-                const from = [userLocation.lat, userLocation.lng];
-                const to = [lat, lng];
-                if (navigateLine) {
-                    map.removeLayer(navigateLine);
-                    navigateLine = null;
-                }
-                navigateLine = L.polyline([from, to], {
-                    color: '#1a73e8',
-                    weight: 4,
-                    dashArray: '6,6',
-                    opacity: 0.8
-                }).addTo(map);
-                map.fitBounds(L.latLngBounds(from, to), { padding: [50, 50] });
-                showToast('📍 Navigation line drawn.', 'info');
-            } else {
-                showToast('📍 Parcel centered. Enable GPS for navigation line.', 'info');
-            }
-            const marker = L.marker([lat, lng], {
-                icon: L.divIcon({
-                    className: 'centroid-marker',
-                    html: `<div style="width:20px;height:20px;background:#ff4444;border:2px solid white;border-radius:50%;box-shadow:0 0 10px rgba(255,68,68,0.8);"></div>`,
-                    iconSize: [20,20],
-                    iconAnchor: [10,10]
-                })
-            }).addTo(map);
-            setTimeout(() => map.removeLayer(marker), 10000);
-        }
-
         // ============================================================
         // PARCEL IMPORT BUTTON (with centroid markers)
         // ============================================================
@@ -4095,12 +4269,11 @@
                         click: function() {
                             if (feature.properties && feature.properties.centroid) {
                                 activeParcelCentroid = feature.properties.centroid;
-                                if (userLocation) {
+                                if (gpsLocation) {
                                     updateParcelDistance(activeParcelCentroid);
                                 } else {
-                                    $('#propDistance').text('Enable GPS');
-                                    $('#propBearing').text('—');
-                                    $('#navigateBtn').hide();
+                                    // update with no GPS
+                                    updateParcelDistance(activeParcelCentroid);
                                 }
                             }
                             openParcelSurvey(feature, layer);
@@ -4144,7 +4317,6 @@
             $('#parcelImportStatus').html('');
             $('#parcelPreviewContainer').hide();
 
-            // Refresh lock status after import
             refreshLockStatus();
         });
 
@@ -4184,12 +4356,10 @@
                                 click: function() {
                                     if (feature.properties && feature.properties.centroid) {
                                         activeParcelCentroid = feature.properties.centroid;
-                                        if (userLocation) {
+                                        if (gpsLocation) {
                                             updateParcelDistance(activeParcelCentroid);
                                         } else {
-                                            $('#propDistance').text('Enable GPS');
-                                            $('#propBearing').text('—');
-                                            $('#navigateBtn').hide();
+                                            updateParcelDistance(activeParcelCentroid);
                                         }
                                     }
                                     openParcelSurvey(feature, layer);
@@ -4570,7 +4740,11 @@
                                 click: function() {
                                     if (feature.properties && feature.properties.centroid) {
                                         activeParcelCentroid = feature.properties.centroid;
-                                        if (userLocation) updateParcelDistance(activeParcelCentroid);
+                                        if (gpsLocation) {
+                                            updateParcelDistance(activeParcelCentroid);
+                                        } else {
+                                            updateParcelDistance(activeParcelCentroid);
+                                        }
                                     }
                                     openParcelSurvey(feature, layer);
                                 }
@@ -4680,286 +4854,6 @@
             setTimeout(updateScaleBar, 500);
             showToast('✅ Map ready – GPS, centroids, saved layers, toggles.', 'success');
         });
-
-        // ============================================================
-        // ENHANCED GPS TOGGLE - FULL FEATURED
-        // ============================================================
-        let gpsWatchId = null;
-        let gpsLocation = null;
-        let gpsMarker = null;
-        let gpsCircle = null;
-        let gpsPulse = null;
-
-        function toggleGPS() {
-            const btn = document.getElementById('gpsFloatingBtn');
-            const badge = document.getElementById('gpsStatusBadge');
-            const coordDisplay = document.getElementById('gpsCoordDisplay');
-
-            if (!btn) {
-                console.error('GPS button not found');
-                return;
-            }
-
-            if (gpsWatchId) {
-                stopGPS(btn, badge);
-                return;
-            }
-
-            if (!navigator.geolocation) {
-                showToast('GPS not supported on this device.', 'danger');
-                return;
-            }
-
-            btn.textContent = '⏳';
-            btn.className = 'gps-searching';
-            badge.textContent = '🔍 GPS: Searching...';
-            badge.className = 'gps-badge-searching';
-            badge.style.display = 'block';
-
-            clearLocationLayers();
-
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    gpsWatchId = navigator.geolocation.watchPosition(
-                        function(pos) {
-                            updateGPSPosition(pos, btn, badge, coordDisplay);
-                        },
-                        function(error) {
-                            handleGPSError(error, btn, badge);
-                        },
-                        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
-                    );
-                    updateGPSPosition(position, btn, badge, coordDisplay);
-                    showToast('📍 GPS tracking started!', 'success');
-                },
-                function(error) {
-                    handleGPSError(error, btn, badge);
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
-        }
-
-        function updateGPSPosition(position, btn, badge, coordDisplay) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
-            const altitude = position.coords.altitude;
-            const heading = position.coords.heading;
-            const speed = position.coords.speed;
-
-            gpsLocation = { lat, lng, accuracy, altitude, heading, speed };
-
-            btn.textContent = '📍';
-            btn.className = 'gps-active';
-
-            let accuracyText = '';
-            let color = '#22c55e';
-            if (accuracy < 10) {
-                accuracyText = 'Excellent';
-                color = '#22c55e';
-            } else if (accuracy < 30) {
-                accuracyText = 'Good';
-                color = '#22c55e';
-            } else if (accuracy < 100) {
-                accuracyText = 'Fair';
-                color = '#f59e0b';
-                btn.className = 'gps-searching';
-            } else {
-                accuracyText = 'Low';
-                color = '#ef4444';
-                btn.className = 'gps-error';
-            }
-            badge.textContent = `📍 GPS: ${accuracyText} ±${Math.round(accuracy)}m`;
-            badge.className = 'gps-badge-active';
-            badge.style.color = color;
-            badge.style.borderColor = color;
-
-            updateLocationMarker(lat, lng, accuracy);
-
-            if (coordDisplay) {
-                coordDisplay.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} ±${Math.round(accuracy)}m`;
-                coordDisplay.className = 'gps-coord-display active';
-            }
-
-            const mapCenter = map.getCenter();
-            const distance = turf.distance(
-                turf.point([lng, lat]),
-                turf.point([mapCenter.lng, mapCenter.lat]),
-                { units: 'kilometers' }
-            );
-            if (distance > 0.5) {
-                map.flyTo([lat, lng], 18, { duration: 1.5 });
-            }
-        }
-
-        function stopGPS(btn, badge) {
-            if (gpsWatchId) {
-                navigator.geolocation.clearWatch(gpsWatchId);
-                gpsWatchId = null;
-            }
-            gpsLocation = null;
-            clearLocationLayers();
-            btn.textContent = '📡';
-            btn.className = '';
-            btn.style.background = 'rgba(15, 23, 42, 0.95)';
-            btn.style.borderColor = '#3b82f6';
-            if (badge) {
-                badge.textContent = '📡 GPS: OFF';
-                badge.className = '';
-                badge.style.color = '#94a3b8';
-                badge.style.borderColor = 'rgba(255,255,255,0.1)';
-            }
-            const coordDisplay = document.getElementById('gpsCoordDisplay');
-            if (coordDisplay) {
-                coordDisplay.className = 'gps-coord-display';
-            }
-            showToast('GPS stopped', 'info');
-        }
-
-        function handleGPSError(error, btn, badge) {
-            let errorMsg = 'GPS Error';
-            switch(error.code) {
-                case error.PERMISSION_DENIED: errorMsg = 'Permission denied. Allow location in browser settings.'; break;
-                case error.POSITION_UNAVAILABLE: errorMsg = 'Signal unavailable. Try going outside.'; break;
-                case error.TIMEOUT: errorMsg = 'GPS timed out. Try again in open area.'; break;
-                default: errorMsg = error.message || 'Unknown GPS error';
-            }
-            btn.textContent = '❌';
-            btn.className = 'gps-error';
-            btn.style.borderColor = '#ef4444';
-            if (badge) {
-                badge.textContent = `❌ ${errorMsg}`;
-                badge.className = 'gps-badge-error';
-                badge.style.color = '#ef4444';
-                badge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-            }
-            showToast(`❌ ${errorMsg}`, 'danger');
-            console.error('GPS Error:', error);
-            setTimeout(() => {
-                btn.textContent = '📡';
-                btn.className = '';
-                btn.style.borderColor = '#3b82f6';
-                if (badge) {
-                    badge.textContent = '📡 GPS: OFF';
-                    badge.className = '';
-                    badge.style.color = '#94a3b8';
-                }
-            }, 3000);
-        }
-
-        function updateLocationMarker(lat, lng, accuracy) {
-            clearLocationLayers();
-            const icon = L.divIcon({
-                className: 'user-location-marker',
-                html: `
-                    <div class="marker-dot"></div>
-                    <div class="marker-pulse"></div>
-                    <div class="marker-pulse" style="animation-delay: 0.5s;"></div>
-                `,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
-            });
-            gpsMarker = L.marker([lat, lng], { icon }).addTo(map);
-            gpsCircle = L.circle([lat, lng], {
-                radius: accuracy,
-                color: '#2563eb',
-                fillColor: '#2563eb',
-                fillOpacity: 0.08,
-                weight: 2,
-                opacity: 0.6,
-                className: 'gps-accuracy-circle'
-            }).addTo(map);
-        }
-
-        function clearLocationLayers() {
-            if (gpsMarker) {
-                map.removeLayer(gpsMarker);
-                gpsMarker = null;
-            }
-            if (gpsCircle) {
-                map.removeLayer(gpsCircle);
-                gpsCircle = null;
-            }
-            if (gpsPulse) {
-                map.removeLayer(gpsPulse);
-                gpsPulse = null;
-            }
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if ((e.key === 'g' || e.key === 'G') && !e.ctrlKey && !e.metaKey && !e.altKey) {
-                e.preventDefault();
-                toggleGPS();
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const container = document.getElementById('mapContainer') || document.querySelector('#map').parentElement;
-            if (container && !document.getElementById('gpsCoordDisplay')) {
-                const display = document.createElement('div');
-                display.id = 'gpsCoordDisplay';
-                display.className = 'gps-coord-display';
-                container.appendChild(display);
-            }
-        });
-
-        
-                function updateParcelDistance(centroid) {
-            if (!userLocation || !centroid) {
-                $('#propDistance').text('—');
-                $('#propBearing').text('—');
-                $('#navigateBtn').hide();
-                $('#navDistance').text('--');
-                $('#navDirection').text('--');
-                $('#navTime').text('⏱ --');
-                $('#compassPointer').attr('transform', 'rotate(0 70 70)');
-                $('#gpsNavContainer').hide();
-                return;
-            }
-
-            const from = turf.point([userLocation.lng, userLocation.lat]);
-            const to = turf.point([centroid.lng, centroid.lat]);
-            const distanceKm = turf.distance(from, to, { units: 'kilometers' });
-            const bearing = turf.bearing(from, to);
-
-            let unit = 'km';
-            let displayDist = distanceKm.toFixed(2);
-            if (distanceKm < 0.1) {
-                const meters = distanceKm * 1000;
-                unit = 'm';
-                displayDist = meters.toFixed(0);
-            }
-            $('#propDistance').text(displayDist + ' ' + unit);
-            $('#propBearing').text(bearing.toFixed(1) + '°');
-            $('#navigateBtn').show();
-
-            $('#navDistance').text(displayDist + ' ' + unit);
-            const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-            const idx = Math.round(((bearing % 360) / 45)) % 8;
-            const dir = dirs[idx];
-            $('#navDirection').text(dir + ' (' + Math.round(bearing) + '°)');
-            $('#compassPointer').attr('transform', 'rotate(' + bearing + ' 70 70)');
-
-            const speedKmh = 5;
-            const timeHours = distanceKm / speedKmh;
-            let timeDisplay = '';
-            if (timeHours < 1/60) {
-                const seconds = Math.round(timeHours * 3600);
-                timeDisplay = seconds + ' sec';
-            } else if (timeHours < 1) {
-                const minutes = Math.round(timeHours * 60);
-                timeDisplay = minutes + ' min';
-            } else {
-                const hours = Math.floor(timeHours);
-                const minutes = Math.round((timeHours - hours) * 60);
-                timeDisplay = hours + 'h ' + minutes + 'm';
-            }
-            $('#navTime').text('⏱ ' + timeDisplay);
-            $('#gpsNavContainer').show();
-        }
-
-
-        console.log('✅ Enhanced GPS Toggle ready - Click 📡 button or press G');
 
         // ============================================================
         // ENHANCED SEARCH WITH SUGGESTIONS
