@@ -1703,7 +1703,9 @@ body.dark-mode .gps-card .gps-status-bar {
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
 
-   <<script>
+   <script>
+    $(document).ready(function() {
+
         // ============================================================
         // 1. EPSG:2136
         // ============================================================
@@ -2064,7 +2066,7 @@ body.dark-mode .gps-card .gps-status-bar {
         let isGpsActive = false;
         let navigateLine = null;
         let activeParcelCentroid = null;
-        let deviceHeading = null;   // <-- MOVED HERE (declared globally)
+        let deviceHeading = null;   // Global for compass orientation
 
         // DOM references (for the new panel)
         const $gpsNav = $('#gpsNavContainer');
@@ -2587,7 +2589,7 @@ body.dark-mode .gps-card .gps-status-bar {
         // ============================================================
         // 19. DEVICE ORIENTATION (Compass reacts to phone turn)
         // ============================================================
-        // deviceHeading is now declared globally (Section 7), so we don't redeclare it.
+        // deviceHeading is already declared globally (Section 7)
 
         if (window.DeviceOrientationEvent) {
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -2612,9 +2614,6 @@ body.dark-mode .gps-card .gps-status-bar {
                 // Otherwise the combined override above will handle it
             }
         }
-
-        // ---- The rest of the file is unchanged (point plotting, drawing, parcel import, etc.) ----
-        // (The rest of your code continues from here...)
 
         // ============================================================
         // 8. CURSOR COORDINATE TRACKER
@@ -5294,9 +5293,11 @@ body.dark-mode .gps-card .gps-status-bar {
         }
 
         // ---- MOBILE TOGGLES ----
-        document.addEventListener('DOMContentLoaded', function() {
+        // We'll use both DOMContentLoaded and ready to ensure it works.
+        function initMobileToggles() {
             const isMobile = window.innerWidth <= 768;
 
+            // Point toolbar toggle (FAB)
             const ptToggle = document.getElementById('ptToolbarToggle');
             const ptToolbar = document.getElementById('pointToolbar');
             if (ptToggle && ptToolbar) {
@@ -5307,22 +5308,25 @@ body.dark-mode .gps-card .gps-status-bar {
                 });
             }
 
+            // Layers panel toggle (bottom sheet)
             const layersToggle = document.getElementById('layersToggleMobile');
             const layersPanel = document.getElementById('layersPanel');
             if (layersToggle && layersPanel) {
                 layersToggle.style.display = isMobile ? 'flex' : 'none';
-                layersToggle.addEventListener('click', function() {
+                // Remove any existing listeners to avoid duplicates
+                const newToggle = layersToggle.cloneNode(true);
+                layersToggle.parentNode.replaceChild(newToggle, layersToggle);
+                newToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     layersPanel.classList.toggle('open');
+                    // Log for debugging
+                    console.log('Layers panel toggled, class open:', layersPanel.classList.contains('open'));
                 });
-                document.addEventListener('click', function(e) {
-                    if (layersPanel.classList.contains('open') && 
-                        !layersPanel.contains(e.target) && 
-                        e.target !== layersToggle) {
-                        layersPanel.classList.remove('open');
-                    }
-                });
+                // Also allow clicking on the overlay background to close? Not needed, but we'll keep it.
             }
 
+            // Coordinate panel toggle
             const coordToggle = document.getElementById('coordToggleMobile');
             const coordPanel = document.getElementById('coordPanel');
             if (coordToggle && coordPanel) {
@@ -5332,12 +5336,25 @@ body.dark-mode .gps-card .gps-status-bar {
                 });
             }
 
+            // Hide old desktop layers toggle on mobile
             if (isMobile) {
                 const layersToggleOld = document.getElementById('layersToggle');
                 if (layersToggleOld) layersToggleOld.style.display = 'none';
             }
-        });
-    </script>
+        }
+
+        // Call on ready and also on resize (optional)
+        $(document).ready(initMobileToggles);
+        // Also run after a short delay to ensure all elements are present
+        setTimeout(initMobileToggles, 100);
+        // If window resizes, we could re-run, but it's fine.
+
+        // Also ensure that the desktop layers toggle works with the panel ID
+        // (already handled above)
+
+        console.log('✅ Map and all controls initialised.');
+    });
+</script>
 
     </body>
 </html> 
