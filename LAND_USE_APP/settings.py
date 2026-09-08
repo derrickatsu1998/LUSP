@@ -154,39 +154,59 @@ WSGI_APPLICATION = "LAND_USE_APP.wsgi.application"
 # ============================================================
 
 import os
-
-
-# Use DATABASE_URL for production (Render)
-# If DATABASE_URL is set, use PostgreSQL
-# Otherwise, fallback to SQLite for local development
-import dj_database_url
 import socket
+import dj_database_url
+from urllib.parse import urlparse
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.config(
-            conn_max_age=600,
-            ssl_require=True
-        )
-    }
-    # Ensure PostGIS engine is used
-    DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
+    # Parse the URL to get components
+    parsed = urlparse(DATABASE_URL)
+    db_name = parsed.path.lstrip('/')
+    user = parsed.username
+    password = parsed.password
+    host = parsed.hostname
+    port = parsed.port or 5432
 
-    # Force IPv4: resolve the hostname to an IPv4 address
-    host = DATABASES['default'].get('HOST')
-    if host and not host.replace('.', '').isdigit():  # not already an IP
-        try:
-            # Get IPv4 address from getaddrinfo
-            addrinfo = socket.getaddrinfo(host, 5432, socket.AF_INET, socket.SOCK_STREAM)
-            if addrinfo:
-                ipv4 = addrinfo[0][4][0]
-                DATABASES['default']['HOST'] = ipv4
-                print(f"✅ Using IPv4 address for database: {ipv4}")
-        except Exception as e:
-            print(f"⚠️ Could not resolve IPv4: {e}")
+    # Resolve hostname to IPv4 address
+    ipv4 = None
+    try:
+        ipv4 = socket.gethostbyname(host)
+        print(f"✅ Resolved {host} to IPv4: {ipv4}")
+    except Exception as e:
+        print(f"⚠️ Could not resolve IPv4: {e}")
+
+    # Build the connection dictionary
+    if ipv4:
+        # Use hostaddr (IPv4) and host (for SSL verification)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.contrib.gis.db.backends.postgis',
+                'NAME': db_name,
+                'USER': user,
+                'PASSWORD': password,
+                'HOST': host,           # hostname for SSL cert verification
+                'HOSTADDR': ipv4,       # IPv4 address for actual connection
+                'PORT': port,
+                'CONN_MAX_AGE': 600,
+                'OPTIONS': {
+                    'sslmode': 'require',
+                },
+            }
+        }
+    else:
+        # Fallback to dj_database_url (may still use IPv6)
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=DATABASE_URL,
+                conn_max_age=600,
+                ssl_require=True
+            )
+        }
+        DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 else:
+    # Local development – SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
