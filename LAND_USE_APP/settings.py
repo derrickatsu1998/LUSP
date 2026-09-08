@@ -160,7 +160,7 @@ from urllib.parse import urlparse
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Parse the URL manually
+    # Parse the connection string manually
     parsed = urlparse(DATABASE_URL)
     db_name = parsed.path.lstrip('/')
     user = parsed.username
@@ -168,10 +168,10 @@ if DATABASE_URL:
     host = parsed.hostname
     port = parsed.port or 5432
 
-    # Get the IPv4 address of the host
+    # Resolve the hostname to an IPv4 address (ignores IPv6)
     ipv4 = None
     try:
-        # Force IPv4 resolution by using socket.getaddrinfo with AF_INET
+        # Force IPv4 using AF_INET
         addrinfo = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
         if addrinfo:
             ipv4 = addrinfo[0][4][0]
@@ -186,19 +186,25 @@ if DATABASE_URL:
             'NAME': db_name,
             'USER': user,
             'PASSWORD': password,
-            'HOST': ipv4 if ipv4 else host,  # Use IPv4 if resolved, else hostname
             'PORT': port,
             'CONN_MAX_AGE': 600,
-            'OPTIONS': {
-                'sslmode': 'require',
-            },
         }
     }
 
-    # If we have an IPv4, also set hostaddr to enforce it
     if ipv4:
-        DATABASES['default']['OPTIONS']['hostaddr'] = ipv4
-
+        # Use IPv4 for the connection, but keep host for SSL certificate verification
+        DATABASES['default']['HOST'] = ipv4
+        DATABASES['default']['OPTIONS'] = {
+            'sslmode': 'require',
+            'hostaddr': ipv4,           # force psycopg2 to use this IP
+            'sslhost': host,            # verify SSL certificate against the domain
+        }
+    else:
+        # Fallback to the hostname (may still use IPv6)
+        DATABASES['default']['HOST'] = host
+        DATABASES['default']['OPTIONS'] = {
+            'sslmode': 'require',
+        }
 else:
     # Local development – SQLite
     DATABASES = {
