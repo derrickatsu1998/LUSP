@@ -154,17 +154,17 @@ WSGI_APPLICATION = "LAND_USE_APP.wsgi.application"
 # ============================================================
 
 import os
-import dj_database_url
+
 
 # Use DATABASE_URL for production (Render)
 # If DATABASE_URL is set, use PostgreSQL
 # Otherwise, fallback to SQLite for local development
 import dj_database_url
+import socket
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Production on Render – use PostgreSQL
     DATABASES = {
         'default': dj_database_url.config(
             conn_max_age=600,
@@ -173,8 +173,20 @@ if DATABASE_URL:
     }
     # Ensure PostGIS engine is used
     DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
+
+    # Force IPv4: resolve the hostname to an IPv4 address
+    host = DATABASES['default'].get('HOST')
+    if host and not host.replace('.', '').isdigit():  # not already an IP
+        try:
+            # Get IPv4 address from getaddrinfo
+            addrinfo = socket.getaddrinfo(host, 5432, socket.AF_INET, socket.SOCK_STREAM)
+            if addrinfo:
+                ipv4 = addrinfo[0][4][0]
+                DATABASES['default']['HOST'] = ipv4
+                print(f"✅ Using IPv4 address for database: {ipv4}")
+        except Exception as e:
+            print(f"⚠️ Could not resolve IPv4: {e}")
 else:
-    # Local development – use SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
