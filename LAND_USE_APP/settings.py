@@ -154,59 +154,20 @@ WSGI_APPLICATION = "LAND_USE_APP.wsgi.application"
 # ============================================================
 
 import os
-import socket
-from urllib.parse import urlparse
+import dj_database_url
+
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Parse the connection string manually
-    parsed = urlparse(DATABASE_URL)
-    db_name = parsed.path.lstrip('/')
-    user = parsed.username
-    password = parsed.password
-    host = parsed.hostname
-    port = parsed.port or 5432
-
-    # Resolve the hostname to an IPv4 address (ignores IPv6)
-    ipv4 = None
-    try:
-        # Force IPv4 using AF_INET
-        addrinfo = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
-        if addrinfo:
-            ipv4 = addrinfo[0][4][0]
-            print(f"✅ Resolved {host} to IPv4: {ipv4}")
-    except Exception as e:
-        print(f"⚠️ Could not resolve IPv4: {e}")
-
-    # Build the database config
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.contrib.gis.db.backends.postgis',
-            'NAME': db_name,
-            'USER': user,
-            'PASSWORD': password,
-            'PORT': port,
-            'CONN_MAX_AGE': 600,
-        }
+        'default': dj_database_url.config(
+            conn_max_age=600,
+            ssl_require=True
+        )
     }
-
-    if ipv4:
-        # Use IPv4 for the connection, but keep host for SSL certificate verification
-        DATABASES['default']['HOST'] = ipv4
-        DATABASES['default']['OPTIONS'] = {
-            'sslmode': 'require',
-            'hostaddr': ipv4,           # force psycopg2 to use this IP
-            'sslhost': host,            # verify SSL certificate against the domain
-        }
-    else:
-        # Fallback to the hostname (may still use IPv6)
-        DATABASES['default']['HOST'] = host
-        DATABASES['default']['OPTIONS'] = {
-            'sslmode': 'require',
-        }
+    DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 else:
-    # Local development – SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
