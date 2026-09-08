@@ -160,6 +160,7 @@ from urllib.parse import urlparse
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
+    # Parse the URL manually
     parsed = urlparse(DATABASE_URL)
     db_name = parsed.path.lstrip('/')
     user = parsed.username
@@ -167,33 +168,37 @@ if DATABASE_URL:
     host = parsed.hostname
     port = parsed.port or 5432
 
-    # Resolve IPv4 address
+    # Get the IPv4 address of the host
     ipv4 = None
     try:
-        ipv4 = socket.gethostbyname(host)
-        print(f"✅ Resolved {host} to IPv4: {ipv4}")
+        # Force IPv4 resolution by using socket.getaddrinfo with AF_INET
+        addrinfo = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
+        if addrinfo:
+            ipv4 = addrinfo[0][4][0]
+            print(f"✅ Resolved {host} to IPv4: {ipv4}")
     except Exception as e:
         print(f"⚠️ Could not resolve IPv4: {e}")
 
-    # If we got an IPv4, use it; otherwise fallback to hostname
-    db_host = ipv4 if ipv4 else host
-
+    # Build the database config
     DATABASES = {
         'default': {
             'ENGINE': 'django.contrib.gis.db.backends.postgis',
             'NAME': db_name,
             'USER': user,
             'PASSWORD': password,
-            'HOST': db_host,          # IPv4 address or hostname as fallback
+            'HOST': ipv4 if ipv4 else host,  # Use IPv4 if resolved, else hostname
             'PORT': port,
             'CONN_MAX_AGE': 600,
             'OPTIONS': {
                 'sslmode': 'require',
-                # Uncomment the next line if you want to verify the SSL certificate against the original domain:
-                # 'sslhost': host,
             },
         }
     }
+
+    # If we have an IPv4, also set hostaddr to enforce it
+    if ipv4:
+        DATABASES['default']['OPTIONS']['hostaddr'] = ipv4
+
 else:
     # Local development – SQLite
     DATABASES = {
