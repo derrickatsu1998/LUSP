@@ -159,14 +159,14 @@ import dj_database_url
 # Use DATABASE_URL for production (Render)
 # If DATABASE_URL is set, use PostgreSQL
 # Otherwise, fallback to SQLite for local development
+import dj_database_url
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Production on Render - use PostgreSQL
+    # Production on Render – use PostgreSQL
     DATABASES = {
         'default': dj_database_url.config(
-            default=DATABASE_URL,
             conn_max_age=600,
             ssl_require=True
         )
@@ -174,7 +174,7 @@ if DATABASE_URL:
     # Ensure PostGIS engine is used
     DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 else:
-    # Local development - use SQLite
+    # Local development – use SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
