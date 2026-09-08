@@ -1700,7 +1700,7 @@
     <!-- ============================================================
     MAIN SCRIPT – FULLY CORRECTED
     ============================================================ -->
-    <script>
+   <script>
     $(document).ready(function() {
 
         // ============================================================
@@ -5305,22 +5305,31 @@
                 });
             }
 
-            // Layers panel toggle (bottom sheet)
+            // Layers panel toggle (bottom sheet) – FIXED
             const layersToggle = document.getElementById('layersToggleMobile');
             const layersPanel = document.getElementById('layersPanel');
             if (layersToggle && layersPanel) {
                 layersToggle.style.display = isMobile ? 'flex' : 'none';
-                // Remove any existing listeners to avoid duplicates
+                // Remove existing listeners to avoid duplicates
                 const newToggle = layersToggle.cloneNode(true);
                 layersToggle.parentNode.replaceChild(newToggle, layersToggle);
                 newToggle.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
+                    // Toggle the class
                     layersPanel.classList.toggle('open');
-                    // Log for debugging
-                    console.log('Layers panel toggled, class open:', layersPanel.classList.contains('open'));
+                    // Force display and transform based on class
+                    if (layersPanel.classList.contains('open')) {
+                        layersPanel.style.display = 'block';
+                        layersPanel.style.transform = 'translateY(0)';
+                        layersPanel.style.opacity = '1';
+                    } else {
+                        layersPanel.style.display = 'none';
+                        layersPanel.style.transform = 'translateY(100%)';
+                        layersPanel.style.opacity = '0';
+                    }
+                    console.log('Layers panel toggled. Open:', layersPanel.classList.contains('open'));
                 });
-                // Also allow clicking on the overlay background to close? Not needed, but we'll keep it.
             }
 
             // Coordinate panel toggle
